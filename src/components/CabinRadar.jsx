@@ -25,6 +25,10 @@ export default function CabinRadar({
   onUpdateFacultyStatus,
   onNavigateToNode 
 }) {
+  if (userRole === 'janitorial') {
+    return null;
+  }
+
   // Student modal booking state
   const [selectedFaculty, setSelectedFaculty] = useState(null);
   const [bookingSlot, setBookingSlot] = useState('');

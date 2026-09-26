@@ -261,6 +261,9 @@ export default function App() {
         currentRole={userRole}
         onRoleChange={(newRole) => {
           setUserRole(newRole);
+          if (newRole === 'janitorial') {
+            setActiveTab('janitorial');
+          }
           setNotification(`Switched persona to: ${newRole.toUpperCase()}`);
         }}
         onOpenScanner={() => setIsScannerOpen(true)}
@@ -303,28 +306,29 @@ export default function App() {
             </span>
           </button>
 
-          {/* TAB 3: Role-based Cabin / Appointments Tab Label */}
-          <button
-            onClick={() => setActiveTab('cabin')}
-            className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
-              activeTab === 'cabin'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <Users className="h-4 w-4" />
-            <span>
-              {userRole === 'student' && 'Faculty Cabin Radar (Book Slot)'}
-              {(userRole === 'faculty' || userRole === 'hod') && 'Cabin Desk & Student Appointments'}
-              {userRole === 'janitorial' && 'Staff Cabin Registry'}
-              {userRole === 'admin' && 'All Cabin Bookings Log'}
-            </span>
-            {(userRole === 'faculty' || userRole === 'hod') && pendingAppointmentsCount > 0 && (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
-                {pendingAppointmentsCount}
+          {/* TAB 3: Role-based Cabin / Appointments Tab Label (Hidden for Janitor) */}
+          {userRole !== 'janitorial' && (
+            <button
+              onClick={() => setActiveTab('cabin')}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
+                activeTab === 'cabin'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              <span>
+                {userRole === 'student' && 'Faculty Cabin Radar (Book Slot)'}
+                {(userRole === 'faculty' || userRole === 'hod') && 'Cabin Desk & Student Appointments'}
+                {userRole === 'admin' && 'All Cabin Bookings Log'}
               </span>
-            )}
-          </button>
+              {(userRole === 'faculty' || userRole === 'hod') && pendingAppointmentsCount > 0 && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
+                  {pendingAppointmentsCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* TAB 4: Helpdesk */}
           <button
@@ -405,8 +409,8 @@ export default function App() {
           <ErpHub userRole={userRole} />
         )}
 
-        {/* Tab 3: Dynamic Cabin Occupancy Radar & Student Appointments Desk */}
-        {activeTab === 'cabin' && (
+        {/* Tab 3: Dynamic Cabin Occupancy Radar & Student Appointments Desk (Hidden for Janitor) */}
+        {activeTab === 'cabin' && userRole !== 'janitorial' && (
           <CabinRadar
             userRole={userRole}
             appointments={appointments}
