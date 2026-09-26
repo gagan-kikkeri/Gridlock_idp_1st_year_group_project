@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { STUDENT_ERP } from '../data/campusData.js';
+import { STUDENT_ERP, FACULTY_CLASS_ROSTER } from '../data/campusData.js';
 import { 
   GraduationCap, 
   CheckCircle2, 
@@ -13,16 +13,31 @@ import {
   TrendingUp, 
   ShieldCheck,
   Building,
-  Clock
+  Clock,
+  Save,
+  Check,
+  X,
+  Users,
+  Award,
+  Lock,
+  Database
 } from 'lucide-react';
 
 export default function ErpHub({ userRole }) {
-  const [activeTab, setActiveTab] = useState('attendance'); // 'attendance', 'finance', 'idcard', 'hallticket'
+  // Student view states
+  const [activeTab, setActiveTab] = useState('attendance');
   const [qrToken, setQrToken] = useState('GL-SEC-98421');
   const [qrRefreshCountdown, setQrRefreshCountdown] = useState(30);
   const [showHallTicketModal, setShowHallTicketModal] = useState(false);
 
-  // Time-variant QR Token refresh (Slide 10)
+  // Faculty view states
+  const [classRoster, setClassRoster] = useState(FACULTY_CLASS_ROSTER);
+  const [facultySavedToast, setFacultySavedToast] = useState(false);
+
+  // HOD condonation state
+  const [condonedStudents, setCondonedStudents] = useState({});
+
+  // Auto-refresh dynamic token for student
   useEffect(() => {
     const timer = setInterval(() => {
       setQrRefreshCountdown(prev => {
@@ -42,8 +57,327 @@ export default function ErpHub({ userRole }) {
   ).toFixed(1);
 
   const hasShortage = STUDENT_ERP.attendance.some(s => s.percentage < 75);
-  const isHallTicketEligible = overallAttendance >= 75 && STUDENT_ERP.financials.outstanding === 0;
 
+  // Toggle student attendance by faculty
+  const handleToggleStudentAttendance = (usn) => {
+    setClassRoster(prev => prev.map(s => {
+      if (s.usn === usn) {
+        return { ...s, presentToday: !s.presentToday };
+      }
+      return s;
+    }));
+  };
+
+  // Update student CIE marks by faculty
+  const handleUpdateCie = (usn, delta) => {
+    setClassRoster(prev => prev.map(s => {
+      if (s.usn === usn) {
+        const newMarks = Math.max(0, Math.min(50, s.cieMarks + delta));
+        return { ...s, cieMarks: newMarks };
+      }
+      return s;
+    }));
+  };
+
+  const handleSaveFacultySession = () => {
+    setFacultySavedToast(true);
+    setTimeout(() => setFacultySavedToast(false), 2500);
+  };
+
+  // =========================================================================
+  // VIEW 1: FACULTY ERP VIEW (Mark Attendance, Edit Marks)
+  // =========================================================================
+  if (userRole === 'faculty') {
+    return (
+      <div className="flex flex-col gap-5 rounded-2xl border border-blue-500/30 bg-slate-900/90 p-5 shadow-2xl">
+        {/* Faculty Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">👨‍💻</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white">
+                  Prof. Rajesh K • Faculty Grading & Attendance Desk
+                </h3>
+                <span className="rounded bg-blue-500/20 text-blue-300 text-[10px] font-bold px-2 py-0.5 border border-blue-500/30">
+                  SESSION 2026
+                </span>
+              </div>
+              <p className="text-xs text-slate-300">
+                Course: <strong className="text-white">Data Structures & Algorithms (22CS21)</strong> • Section B (60 Students)
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveFacultySession}
+            className="flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/30 transition active:scale-95"
+          >
+            <Save className="h-4 w-4" />
+            Save & Sync Attendance Ledger
+          </button>
+        </div>
+
+        {facultySavedToast && (
+          <div className="rounded-xl bg-emerald-500/15 border border-emerald-500/40 p-3 text-xs text-emerald-300 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4" />
+            Session attendance and CIE scores successfully committed to institutional database!
+          </div>
+        )}
+
+        {/* Student Cohort Roster Table */}
+        <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-800 font-mono">
+              <tr>
+                <th className="px-4 py-3">Student USN & Name</th>
+                <th className="px-4 py-3 text-center">Cumulative %</th>
+                <th className="px-4 py-3 text-center">Today's Lecture</th>
+                <th className="px-4 py-3 text-center">CIE Score (/50)</th>
+                <th className="px-4 py-3 text-center">Admit Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60 text-slate-200">
+              {classRoster.map((student) => (
+                <tr key={student.usn} className="hover:bg-slate-800/40 transition">
+                  <td className="px-4 py-3">
+                    <div className="font-bold text-white">{student.name}</div>
+                    <div className="font-mono text-[10px] text-blue-400">{student.usn}</div>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={`font-mono font-bold ${student.attendancePct < 75 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                      {student.attendancePct}%
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => handleToggleStudentAttendance(student.usn)}
+                      className={`inline-flex items-center gap-1 rounded-lg px-3 py-1 font-bold text-xs transition ${
+                        student.presentToday
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'bg-rose-900/40 text-rose-300 border border-rose-800'
+                      }`}
+                    >
+                      {student.presentToday ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                      {student.presentToday ? 'Present' : 'Absent'}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        onClick={() => handleUpdateCie(student.usn, -1)}
+                        className="h-6 w-6 rounded bg-slate-800 text-slate-300 hover:text-white font-bold"
+                      >
+                        -
+                      </button>
+                      <span className="font-mono font-bold text-blue-300 w-8 text-center">
+                        {student.cieMarks}
+                      </span>
+                      <button
+                        onClick={() => handleUpdateCie(student.usn, 1)}
+                        className="h-6 w-6 rounded bg-slate-800 text-slate-300 hover:text-white font-bold"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {student.attendancePct < 75 ? (
+                      <span className="inline-flex items-center gap-1 rounded bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 text-[10px] font-bold text-rose-300">
+                        <AlertTriangle className="h-3 w-3" /> Detention Warning
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                        <CheckCircle2 className="h-3 w-3" /> Cleared
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VIEW 2: HOD EXECUTIVE DASHBOARD (Department Metrics, Clearance Overrides)
+  // =========================================================================
+  if (userRole === 'hod') {
+    return (
+      <div className="flex flex-col gap-5 rounded-2xl border border-indigo-500/30 bg-slate-900/90 p-5 shadow-2xl">
+        {/* HOD Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-4xl">👨‍🏫</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white">
+                  Dr. Harish Kumar N • Head of Department (CSE)
+                </h3>
+                <span className="rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 border border-amber-500/30 flex items-center gap-1">
+                  <Award className="h-3 w-3" /> HOD EXECUTIVE DESK
+                </span>
+              </div>
+              <p className="text-xs text-slate-300">
+                Department of Computer Science & Engineering • Academic Oversight & Proctorial Approvals
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* High-level metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="rounded-xl bg-slate-950/60 p-4 border border-slate-800">
+            <span className="text-xs text-slate-400">Department Cumulative Attendance</span>
+            <div className="text-2xl font-extrabold text-white mt-1">84.8%</div>
+            <span className="text-[11px] text-emerald-400 mt-1 block">Healthy Department Cohort</span>
+          </div>
+
+          <div className="rounded-xl bg-slate-950/60 p-4 border border-slate-800">
+            <span className="text-xs text-slate-400">Detention Risk Shortage Cases</span>
+            <div className="text-2xl font-extrabold text-amber-400 mt-1">1 Student</div>
+            <span className="text-[11px] text-slate-400 mt-1 block">Rohan Verma (71.0%)</span>
+          </div>
+
+          <div className="rounded-xl bg-slate-950/60 p-4 border border-slate-800">
+            <span className="text-xs text-slate-400">Hall Ticket Clearances Issued</span>
+            <div className="text-2xl font-extrabold text-blue-400 mt-1">59 / 60</div>
+            <span className="text-[11px] text-emerald-400 mt-1 block">98.3% Exam Readiness</span>
+          </div>
+        </div>
+
+        {/* HOD Condonation & Hall Ticket Override Table */}
+        <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            HOD Proctorial Clearance & Shortage Condonation
+          </h4>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs gap-3">
+              <div>
+                <div className="font-bold text-white">Rohan Verma (26UG1BYCS0310-T)</div>
+                <div className="text-[11px] text-amber-400 font-mono mt-0.5">
+                  Cumulative Attendance: 71.0% (Short by 4.0% due to hospitalized medical leave)
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {condonedStudents['26UG1BYCS0310-T'] ? (
+                  <span className="rounded bg-emerald-500/20 text-emerald-300 px-3 py-1 font-bold text-xs border border-emerald-500/40 flex items-center gap-1">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> HOD Condonation Granted
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setCondonedStudents(prev => ({ ...prev, '26UG1BYCS0310-T': true }))}
+                    className="rounded-lg bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 font-bold text-xs transition"
+                  >
+                    Grant Medical Condonation Override
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VIEW 3: JANITORIAL ERP VIEW (Restricted from Grades; Facilities Ledger)
+  // =========================================================================
+  if (userRole === 'janitorial') {
+    return (
+      <div className="flex flex-col gap-5 rounded-2xl border border-amber-500/30 bg-slate-900/90 p-5 shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+          <span className="text-4xl">🧹</span>
+          <div>
+            <h3 className="text-base font-bold text-white">
+              Ramesh M • Lead Custodial & Sanitation Supervisor
+            </h3>
+            <p className="text-xs text-slate-300">
+              Department Facilities Management • Sanitation Logs & Restroom Hygiene
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 text-xs text-amber-200 space-y-1">
+          <div className="font-bold flex items-center gap-1.5">
+            <Lock className="h-4 w-4" /> 5-Tier RBAC Access Control Matrix Notice:
+          </div>
+          <p className="text-[11px] text-slate-300">
+            Student academic grades, attendance marks, and tuition fee accounts are confidential and strictly restricted from janitorial credentials under the project security model (Slide 17).
+          </p>
+        </div>
+
+        {/* Facilities Hygiene Checklist */}
+        <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+            Daily Custodial Sanitation Protocol
+          </h4>
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
+              <span>Ground Floor Restroom Sanitation</span>
+              <span className="text-emerald-400 font-bold">✓ Inspected 10:00 AM</span>
+            </div>
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
+              <span>First Floor Faculty Hygiene Station</span>
+              <span className="text-emerald-400 font-bold">✓ Cleaned 11:30 AM</span>
+            </div>
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
+              <span>Corridor Wet Floor Safety Status</span>
+              <span className="text-amber-400 font-bold">Managed via Janitorial Detour Controls</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VIEW 4: ADMIN ERP VIEW (System Audit, Institutional Revenue)
+  // =========================================================================
+  if (userRole === 'admin') {
+    return (
+      <div className="flex flex-col gap-5 rounded-2xl border border-slate-700 bg-slate-900/90 p-5 shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+          <span className="text-4xl">⚙️</span>
+          <div>
+            <h3 className="text-base font-bold text-white">
+              SuperAdmin • Systems & ERP Institutional Administration
+            </h3>
+            <p className="text-xs text-slate-300">
+              PostgreSQL Relational DB • Full Audit Trails • Financial Gatekeeper
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="rounded-xl bg-slate-950/60 p-4 border border-slate-800">
+            <span className="text-xs text-slate-400">Total Tuition Revenue</span>
+            <div className="text-2xl font-extrabold text-white mt-1">₹4.85 Cr</div>
+            <span className="text-[11px] text-emerald-400 mt-1 block">97.4% Fee Realization</span>
+          </div>
+
+          <div className="rounded-xl bg-slate-950/60 p-4 border border-slate-800">
+            <span className="text-xs text-slate-400">Total Enrolled Accounts</span>
+            <div className="text-2xl font-extrabold text-blue-400 mt-1">1,450</div>
+            <span className="text-[11px] text-slate-400 mt-1 block">CSE, ISE, ECE Departments</span>
+          </div>
+
+          <div className="rounded-xl bg-slate-950/60 p-4 border border-slate-800">
+            <span className="text-xs text-slate-400">Active JWT Sessions</span>
+            <div className="text-2xl font-extrabold text-emerald-400 mt-1">312</div>
+            <span className="text-[11px] text-emerald-400 mt-1 block">Zero XSS Security Policy</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VIEW 5: STUDENT ERP VIEW (Default)
+  // =========================================================================
   return (
     <div className="flex flex-col gap-5 rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-2xl">
       {/* Student Profile Quick Banner */}
@@ -148,7 +482,6 @@ export default function ErpHub({ userRole }) {
             </div>
           </div>
 
-          {/* Subject-wise breakdown table */}
           <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/40">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-800 font-mono">
@@ -254,7 +587,7 @@ export default function ErpHub({ userRole }) {
         </div>
       )}
 
-      {/* TAB 3: HALL TICKET GATE (Slide 10) */}
+      {/* TAB 3: HALL TICKET GATE */}
       {activeTab === 'hallticket' && (
         <div className="flex flex-col gap-4">
           <div className="rounded-xl bg-slate-950/60 p-5 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-5">
@@ -299,11 +632,10 @@ export default function ErpHub({ userRole }) {
         </div>
       )}
 
-      {/* TAB 4: DYNAMIC DIGITAL ID CARD (Slide 10) */}
+      {/* TAB 4: DYNAMIC DIGITAL ID CARD */}
       {activeTab === 'idcard' && (
         <div className="flex justify-center py-2">
           <div className="w-full max-w-md rounded-2xl bg-gradient-to-br from-slate-900 via-blue-950/60 to-slate-900 p-6 border border-blue-500/40 shadow-2xl relative overflow-hidden">
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
                 <div className="text-xs font-black tracking-widest text-blue-400">BMSIT&M</div>
@@ -314,7 +646,6 @@ export default function ErpHub({ userRole }) {
               </span>
             </div>
 
-            {/* Profile Body */}
             <div className="mt-4 flex gap-4 items-center">
               <div className="h-20 w-20 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-3xl font-black text-white shadow-md">
                 GP
@@ -327,7 +658,6 @@ export default function ErpHub({ userRole }) {
               </div>
             </div>
 
-            {/* Time-Variant Cryptographic QR Code */}
             <div className="mt-5 flex flex-col items-center gap-2 rounded-xl bg-slate-950/80 p-4 border border-white/10">
               <div className="p-2 bg-white rounded-lg shadow">
                 <QrCode className="h-28 w-28 text-slate-900" />

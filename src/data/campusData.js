@@ -311,33 +311,13 @@ export const SPATIAL_NODES = {
 
 // Realistic physical walking graph edges with base distances in meters
 export const GRAPH_EDGES = [
-  // --- GROUND FLOOR CORRIDOR BACKBONE ---
   { id: "e-gf-01", u: "N_ENTRANCE", v: "N_LOBBY", distance: 16, corridor: "Entrance Walkway" },
   { id: "e-gf-02", u: "N_LOBBY", v: "N_CORR_W", distance: 18, corridor: "Lobby-West Corridor" },
   { id: "e-gf-03", u: "N_CORR_W", v: "N_CANTEEN", distance: 14, corridor: "West Amenity Passage" },
   { id: "e-gf-04", u: "N_CORR_W", v: "N_SYS_LAB", distance: 18, corridor: "Systems Lab Entrance" },
   { id: "e-gf-05", u: "N_CORR_W", v: "N_AI_LAB", distance: 22, corridor: "AI Lab Approach" },
-  
-  // Detourable central corridor section (Target for Janitorial Hazard Demo)
-  { 
-    id: "e-gf-06", 
-    u: "N_CORR_W", 
-    v: "N_CORR_C", 
-    distance: 24, 
-    corridor: "Ground Central Corridor West",
-    canHaveHazard: true,
-    hazardDefault: false
-  },
-  { 
-    id: "e-gf-07", 
-    u: "N_CORR_C", 
-    v: "N_CORR_E", 
-    distance: 26, 
-    corridor: "Ground Central Corridor East",
-    canHaveHazard: true,
-    hazardDefault: false
-  },
-
+  { id: "e-gf-06", u: "N_CORR_W", v: "N_CORR_C", distance: 24, corridor: "Ground Central Corridor West", canHaveHazard: true },
+  { id: "e-gf-07", u: "N_CORR_C", v: "N_CORR_E", distance: 26, corridor: "Ground Central Corridor East", canHaveHazard: true },
   { id: "e-gf-08", u: "N_CORR_C", v: "N_STAIR_G", distance: 12, corridor: "Staircase 1 Foyer" },
   { id: "e-gf-09", u: "N_CORR_C", v: "N_LIFT_G", distance: 12, corridor: "Elevator 1 Foyer" },
   { id: "e-gf-10", u: "N_CORR_E", v: "N_SEMINAR", distance: 20, corridor: "Auditorium Walkway" },
@@ -347,47 +327,15 @@ export const GRAPH_EDGES = [
   { id: "e-gf-14", u: "N_FIRE_EXIT_S", v: "N_ASSEMBLY", distance: 30, corridor: "South Evacuation Trail" },
   { id: "e-gf-15", u: "N_STAIR_G", v: "N_LOBBY", distance: 22, corridor: "South Atrium Link" },
 
-  // --- VERTICAL INTER-FLOOR TRANSITIONS ---
-  { 
-    id: "e-vert-stair", 
-    u: "N_STAIR_G", 
-    v: "N_STAIR_1F", 
-    distance: 18, 
-    corridor: "Central Stairwell Vertical Flight",
-    isVertical: true,
-    transitType: "stairs"
-  },
-  { 
-    id: "e-vert-lift", 
-    u: "N_LIFT_G", 
-    v: "N_LIFT_1F", 
-    distance: 10, 
-    corridor: "Elevator Shaft Shaft Flight",
-    isVertical: true,
-    transitType: "elevator"
-  },
+  // Vertical Inter-Floor Transitions
+  { id: "e-vert-stair", u: "N_STAIR_G", v: "N_STAIR_1F", distance: 18, corridor: "Central Stairwell Flight", isVertical: true, transitType: "stairs" },
+  { id: "e-vert-lift", u: "N_LIFT_G", v: "N_LIFT_1F", distance: 10, corridor: "Elevator Shaft Flight", isVertical: true, transitType: "elevator" },
 
-  // --- FIRST FLOOR CORRIDOR BACKBONE ---
+  // First Floor Corridor Backbone
   { id: "e-1f-01", u: "N_STAIR_1F", v: "N_1F_CORR_C", distance: 12, corridor: "1F Staircase Landing" },
   { id: "e-1f-02", u: "N_LIFT_1F", v: "N_1F_CORR_C", distance: 12, corridor: "1F Elevator Landing" },
-  { 
-    id: "e-1f-03", 
-    u: "N_1F_CORR_C", 
-    v: "N_1F_CORR_W", 
-    distance: 24, 
-    corridor: "1F West Faculty Passage",
-    canHaveHazard: true,
-    hazardDefault: false
-  },
-  { 
-    id: "e-1f-04", 
-    u: "N_1F_CORR_C", 
-    v: "N_1F_CORR_E", 
-    distance: 26, 
-    corridor: "1F East Academic Passage",
-    canHaveHazard: true,
-    hazardDefault: false
-  },
+  { id: "e-1f-03", u: "N_1F_CORR_C", v: "N_1F_CORR_W", distance: 24, corridor: "1F West Faculty Passage", canHaveHazard: true },
+  { id: "e-1f-04", u: "N_1F_CORR_C", v: "N_1F_CORR_E", distance: 26, corridor: "1F East Academic Passage", canHaveHazard: true },
   { id: "e-1f-05", u: "N_1F_CORR_W", v: "N_HOD", distance: 18, corridor: "HOD Executive Suite Entrance" },
   { id: "e-1f-06", u: "N_1F_CORR_W", v: "N_FACULTY", distance: 20, corridor: "Staff Consultation Chambers" },
   { id: "e-1f-07", u: "N_1F_CORR_W", v: "N_LIBRARY", distance: 22, corridor: "Library & OPAC Wing" },
@@ -398,7 +346,6 @@ export const GRAPH_EDGES = [
   { id: "e-1f-12", u: "N_1F_CORR_E", v: "N_FIRE_EXIT_N", distance: 20, corridor: "East Fire Escape Approach" }
 ];
 
-// Room bounding boxes for rich interactive vector blueprint rendering
 export const FLOOR_ROOMS = {
   0: [
     { id: "MAIN-ENTRANCE", label: "Main Entrance / Security", x: 60, y: 440, w: 120, h: 90, color: "rgba(30, 58, 138, 0.35)", border: "#3b82f6", icon: "DoorOpen" },
@@ -426,7 +373,7 @@ export const FLOOR_ROOMS = {
   ]
 };
 
-// Faculty consultation & Cabin Radar
+// Faculty Roster
 export const FACULTY_ROSTER = [
   {
     id: "fac-harish",
@@ -435,12 +382,28 @@ export const FACULTY_ROSTER = [
     department: "Computer Science & Engineering",
     cabinNodeId: "N_HOD",
     cabinName: "HOD & Research Suite 101",
-    status: "Available", // "Available", "In Meeting", "On Leave"
-    statusMessage: "Available for Major Project Defense consultations",
+    status: "Available",
+    statusMessage: "Available in cabin for student consultation",
     specialization: "High Performance Cloud, Spatial Systems, IoT Networks",
     availableSlots: ["14:30 - 15:00", "15:00 - 15:30", "16:00 - 16:30"],
     email: "harish.kumar@bmsit.in",
-    avatar: "👨‍🏫"
+    avatar: "👨‍🏫",
+    nextClass: { room: "Lecture Hall 101", subject: "Cloud Computing & Distributed Systems", time: "14:00 Today", targetNode: "N_LH_101" }
+  },
+  {
+    id: "fac-rajesh",
+    name: "Prof. Rajesh K",
+    designation: "Assistant Professor",
+    department: "Computer Science & Engineering",
+    cabinNodeId: "N_FACULTY",
+    cabinName: "Faculty Cabin F-08",
+    status: "Available",
+    statusMessage: "Consultation hours for Data Structures & Algorithms",
+    specialization: "Operating Systems, Linux Kernel, Graph Theory",
+    availableSlots: ["11:00 - 11:30", "12:00 - 12:30"],
+    email: "rajesh.k@bmsit.in",
+    avatar: "👨‍💻",
+    nextClass: { room: "Systems & OS Lab 01", subject: "Linux Shell Scripting Practical", time: "15:30 Today", targetNode: "N_SYS_LAB" }
   },
   {
     id: "fac-sunitha",
@@ -454,21 +417,8 @@ export const FACULTY_ROSTER = [
     specialization: "Applied Deep Learning, Computer Vision",
     availableSlots: ["16:30 - 17:00"],
     email: "sunitha.r@bmsit.in",
-    avatar: "👩‍🏫"
-  },
-  {
-    id: "fac-rajesh",
-    name: "Prof. Rajesh K",
-    designation: "Assistant Professor",
-    department: "Computer Science & Engineering",
-    cabinNodeId: "N_FACULTY",
-    cabinName: "Faculty Cabin F-08",
-    status: "Available",
-    statusMessage: "Open consultation hours for Data Structures Lab",
-    specialization: "Operating Systems, Linux Kernel, Graph Theory",
-    availableSlots: ["11:00 - 11:30", "12:00 - 12:30"],
-    email: "rajesh.k@bmsit.in",
-    avatar: "👨‍💻"
+    avatar: "👩‍🏫",
+    nextClass: { room: "AI & ML Lab 02", subject: "Deep Learning Model Optimization", time: "16:30 Today", targetNode: "N_AI_LAB" }
   },
   {
     id: "fac-meenakshi",
@@ -482,7 +432,48 @@ export const FACULTY_ROSTER = [
     specialization: "Cybersecurity, Cryptography, Blockchain",
     availableSlots: ["Monday 10:30 - 11:00"],
     email: "meenakshi.s@bmsit.in",
-    avatar: "👩‍💼"
+    avatar: "👩‍💼",
+    nextClass: { room: "Lecture Hall 102", subject: "Network Security & Applied Crypto", time: "Monday 11:30", targetNode: "N_LH_102" }
+  }
+];
+
+// Initial shared student appointment applications for faculty review
+export const INITIAL_APPOINTMENTS = [
+  {
+    id: "APT-2026-01",
+    studentName: "Gagan N Prasad",
+    studentUsn: "26UG1BYCS0588-T",
+    facultyId: "fac-harish",
+    facultyName: "Dr. Harish Kumar N",
+    cabinName: "HOD & Research Suite 101",
+    slot: "14:30 - 15:00",
+    agenda: "Major Project Defense slides review and A* dynamic detour solver evaluation",
+    status: "Pending", // "Pending", "Accepted", "Rejected"
+    timestamp: "Today, 10:30 AM"
+  },
+  {
+    id: "APT-2026-02",
+    studentName: "Manav Redhu",
+    studentUsn: "26UG1BYCS0293-T",
+    facultyId: "fac-rajesh",
+    facultyName: "Prof. Rajesh K",
+    cabinName: "Faculty Cabin F-08",
+    slot: "11:00 - 11:30",
+    agenda: "Data Structures lab assignment query and tree balancing clarification",
+    status: "Pending",
+    timestamp: "Today, 09:15 AM"
+  },
+  {
+    id: "APT-2026-03",
+    studentName: "Chimbili Manju Ganesh",
+    studentUsn: "26UG1BYCS0043-T",
+    facultyId: "fac-harish",
+    facultyName: "Dr. Harish Kumar N",
+    cabinName: "HOD & Research Suite 101",
+    slot: "15:00 - 15:30",
+    agenda: "Micro-location Cartesian QR node ground calibration at entrance turnstiles",
+    status: "Accepted",
+    timestamp: "Yesterday, 04:20 PM"
   }
 ];
 
@@ -519,13 +510,23 @@ export const STUDENT_ERP = {
       { id: "TXN-91040", date: "2026-09-02", desc: "End-Semester Examination Admit Fee", amount: 3000, status: "SUCCESS", receiptUrl: "#" }
     ],
     hallTicketStatus: {
-      eligible: true, // Requires overall attendance >= 75% AND outstanding == 0
+      eligible: true,
       examCycle: "VTU Even Semester End Examinations 2026",
       centerCode: "BMSIT 1BY",
       admitNumber: "HT-2026-CSE-0588"
     }
   }
 };
+
+// Faculty grading roster
+export const FACULTY_CLASS_ROSTER = [
+  { usn: "26UG1BYCS0588-T", name: "Gagan N Prasad", attendancePct: 91.1, cieMarks: 47, presentToday: true },
+  { usn: "26UG1BYCS0293-T", name: "Manav Redhu", attendancePct: 88.0, cieMarks: 44, presentToday: true },
+  { usn: "26UG1BYCS0043-T", name: "Chimbili Manju Ganesh", attendancePct: 84.5, cieMarks: 42, presentToday: false },
+  { usn: "26UG1BYCS0111-T", name: "Machal Ritesh Govardhan", attendancePct: 89.2, cieMarks: 45, presentToday: true },
+  { usn: "26UG1BYCS0310-T", name: "Rohan Verma", attendancePct: 71.0, cieMarks: 32, presentToday: false, isShortage: true },
+  { usn: "26UG1BYCS0415-T", name: "Sneha Hegde", attendancePct: 95.0, cieMarks: 49, presentToday: true }
+];
 
 // Initial Geo-tagged Grievances
 export const INITIAL_GRIEVANCES = [
@@ -536,7 +537,7 @@ export const INITIAL_GRIEVANCES = [
     floor: 1,
     title: "Overhead Projector HDMI Port Faulty",
     category: "Audio/Visual",
-    status: "Technician Dispatched", // Submitted, Under Review, Technician Dispatched, Resolved
+    status: "Technician Dispatched",
     priority: "High",
     reportedBy: "Gagan N Prasad",
     timestamp: "2026-09-26 10:15 AM",

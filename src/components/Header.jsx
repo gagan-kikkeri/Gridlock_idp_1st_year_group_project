@@ -6,7 +6,8 @@ import {
   QrCode, 
   Activity, 
   Layers,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from 'lucide-react';
 
 export default function Header({ 
@@ -17,12 +18,14 @@ export default function Header({
   activeHazardCount
 }) {
   const roles = [
-    { id: 'student', label: 'Student', icon: '🎓', subtext: 'Gagan N Prasad' },
-    { id: 'faculty', label: 'Faculty', icon: '👨‍🏫', subtext: 'Prof. Rajesh K' },
-    { id: 'hod', label: 'HOD', icon: '🏛️', subtext: 'Dr. Harish Kumar N' },
-    { id: 'janitorial', label: 'Janitorial / Safety', icon: '🧹', subtext: 'Custodial Staff' },
-    { id: 'admin', label: 'Admin', icon: '⚙️', subtext: 'Systems Admin' },
+    { id: 'student', label: 'Student', icon: '🎓', name: 'Gagan N Prasad', usn: '26UG1BYCS0588-T' },
+    { id: 'faculty', label: 'Faculty', icon: '👨‍💻', name: 'Prof. Rajesh K', usn: 'CSE-FAC-08' },
+    { id: 'hod', label: 'HOD', icon: '👨‍🏫', name: 'Dr. Harish Kumar N', usn: 'CSE-HOD-01' },
+    { id: 'janitorial', label: 'Janitorial / Safety', icon: '🧹', name: 'Ramesh M', usn: 'FAC-JAN-04' },
+    { id: 'admin', label: 'Admin', icon: '⚙️', name: 'SuperAdmin', usn: 'SYS-ADM-01' },
   ];
+
+  const activePersona = roles.find(r => r.id === currentRole) || roles[0];
 
   return (
     <header className="glass-panel sticky top-0 z-30 border-b border-slate-800/80 px-4 py-3 sm:px-6">
@@ -64,11 +67,11 @@ export default function Header({
             <span className="hidden md:inline">Scan QR Anchor</span>
           </button>
 
-          {/* Emergency SOS Button */}
+          {/* Emergency SOS Button (Triggers confirmation dialog) */}
           <button
             onClick={onTriggerSos}
-            className="flex items-center gap-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-red-600/30 transition active:scale-95 border border-red-400/40 animate-pulse"
-            title="Immediate safe egress route to nearest assembly point"
+            className="flex items-center gap-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-red-600/30 transition active:scale-95 border border-red-400/40"
+            title="Emergency egress guidance to nearest exit"
           >
             <ShieldAlert className="h-4 w-4" />
             <span>SOS</span>
@@ -78,20 +81,23 @@ export default function Header({
           {activeHazardCount > 0 && (
             <div className="hidden lg:flex items-center gap-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 text-xs text-amber-300">
               <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span>
-              <span className="font-semibold">{activeHazardCount} Active Detour{activeHazardCount > 1 ? 's' : ''}</span>
+              <span className="font-semibold">{activeHazardCount} Detour Active</span>
             </div>
           )}
 
-          {/* 5-Tier RBAC Switcher Dropdown */}
+          {/* 5-Tier RBAC Persona Switcher */}
           <div className="relative">
-            <div className="flex items-center gap-2 rounded-lg bg-slate-800/90 border border-slate-700/80 px-2.5 py-1 text-xs text-slate-200">
-              <span className="text-base">{roles.find(r => r.id === currentRole)?.icon}</span>
-              <div className="hidden sm:block text-left">
-                <div className="text-[10px] text-slate-400 uppercase font-mono tracking-wider">Role Matrix</div>
-                <div className="font-semibold text-white leading-none">
-                  {roles.find(r => r.id === currentRole)?.label}
+            <div className="flex items-center gap-2 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 px-3 py-1.5 text-xs text-slate-200 transition shadow-inner">
+              <span className="text-xl">{activePersona.icon}</span>
+              <div className="text-left">
+                <div className="text-[9px] text-blue-400 font-mono uppercase font-bold tracking-wider">
+                  ROLE: {activePersona.label}
+                </div>
+                <div className="font-bold text-white text-xs leading-tight">
+                  {activePersona.name}
                 </div>
               </div>
+              <ChevronDown className="h-4 w-4 text-slate-400 pointer-events-none ml-1" />
               <select
                 value={currentRole}
                 onChange={(e) => onRoleChange(e.target.value)}
@@ -99,12 +105,11 @@ export default function Header({
                 title="Switch 5-Tier RBAC Persona"
               >
                 {roles.map((role) => (
-                  <option key={role.id} value={role.id} className="bg-slate-900 text-white">
-                    {role.icon} {role.label} ({role.subtext})
+                  <option key={role.id} value={role.id} className="bg-slate-900 text-white py-2">
+                    {role.icon} {role.label} — {role.name} ({role.usn})
                   </option>
                 ))}
               </select>
-              <ChevronDown className="h-3.5 w-3.5 text-slate-400 pointer-events-none" />
             </div>
           </div>
         </div>

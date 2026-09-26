@@ -9,7 +9,11 @@ import GrievanceDesk from './components/GrievanceDesk.jsx';
 import JanitorialControls from './components/JanitorialControls.jsx';
 import SosModal from './components/SosModal.jsx';
 
-import { SPATIAL_NODES } from './data/campusData.js';
+import { 
+  SPATIAL_NODES, 
+  FACULTY_ROSTER, 
+  INITIAL_APPOINTMENTS 
+} from './data/campusData.js';
 import { 
   findShortestPath, 
   findNearestEmergencyExit 
@@ -24,7 +28,8 @@ import {
   AlertTriangle,
   Layers,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  CalendarCheck
 } from 'lucide-react';
 
 export default function App() {
@@ -36,10 +41,12 @@ export default function App() {
   const [startNodeId, setStartNodeId] = useState('N_ENTRANCE');
   const [targetNodeId, setTargetNodeId] = useState('N_HOD');
   
-  // Real-time Hazard Map (EdgeId -> { isBlocked: boolean, type: string })
-  const [hazardMap, setHazardMap] = useState({
-    // Ground central corridor default safe; can be toggled by Janitorial or crowdsource
-  });
+  // Real-time Hazard Map
+  const [hazardMap, setHazardMap] = useState({});
+
+  // Shared Faculty & Appointments State
+  const [facultyList, setFacultyList] = useState(FACULTY_ROSTER);
+  const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
 
   // Modals & SOS States
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -120,6 +127,56 @@ export default function App() {
     }
   };
 
+  // Handler for Faculty accepting an appointment
+  const handleAcceptAppointment = (appointmentId) => {
+    setAppointments(prev => prev.map(a => {
+      if (a.id === appointmentId) {
+        return { ...a, status: 'Accepted' };
+      }
+      return a;
+    }));
+    const app = appointments.find(a => a.id === appointmentId);
+    setNotification(`✓ Consultation with ${app?.studentName || 'Student'} ACCEPTED. Confirmed for ${app?.slot}.`);
+  };
+
+  // Handler for Faculty rejecting an appointment
+  const handleRejectAppointment = (appointmentId) => {
+    setAppointments(prev => prev.map(a => {
+      if (a.id === appointmentId) {
+        return { ...a, status: 'Rejected' };
+      }
+      return a;
+    }));
+    const app = appointments.find(a => a.id === appointmentId);
+    setNotification(`✗ Consultation request for ${app?.studentName || 'Student'} DECLINED.`);
+  };
+
+  // Handler for Student booking an appointment
+  const handleBookAppointment = (newApp) => {
+    setAppointments(prev => [newApp, ...prev]);
+    setNotification(`Application submitted to ${newApp.facultyName}. Awaiting faculty review.`);
+  };
+
+  // Handler for updating faculty cabin presence status
+  const handleUpdateFacultyStatus = (facultyId, newStatus) => {
+    setFacultyList(prev => prev.map(f => {
+      if (f.id === facultyId) {
+        return {
+          ...f,
+          status: newStatus,
+          statusMessage: newStatus === 'Available' 
+            ? 'Available in cabin for student consultation' 
+            : newStatus === 'In Meeting' 
+            ? 'In Department Review Meeting' 
+            : 'Out of station'
+        };
+      }
+      return f;
+    }));
+    const fac = facultyList.find(f => f.id === facultyId);
+    setNotification(`${fac?.name || 'Faculty'} status updated to: ${newStatus.toUpperCase()}`);
+  };
+
   // Handler for Emergency SOS route display
   const handleFollowSosRoute = () => {
     if (egressRoute && egressRoute.targetExit) {
@@ -132,6 +189,7 @@ export default function App() {
   };
 
   const activeHazardCount = Object.values(hazardMap).filter(h => h.isBlocked).length;
+  const pendingAppointmentsCount = appointments.filter(a => a.status === 'Pending').length;
 
   return (
     <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
@@ -148,15 +206,19 @@ export default function App() {
       {/* Global Application Header */}
       <Header
         currentRole={userRole}
-        onRoleChange={setUserRole}
+        onRoleChange={(newRole) => {
+          setUserRole(newRole);
+          setNotification(`Switched persona to: ${newRole.toUpperCase()}`);
+        }}
         onOpenScanner={() => setIsScannerOpen(true)}
         onTriggerSos={() => setIsSosOpen(true)}
         activeHazardCount={activeHazardCount}
       />
 
-      {/* Main Module Navigation Bar */}
+      {/* Role-Specific Module Navigation Bar */}
       <div className="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 sm:px-6">
         <div className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto py-2.5 no-scrollbar">
+          {/* TAB 1: Indoor Navigation */}
           <button
             onClick={() => setActiveTab('wayfinding')}
             className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
@@ -169,6 +231,7 @@ export default function App() {
             <span>Indoor Navigation & Map</span>
           </button>
 
+          {/* TAB 2: Role-based ERP Tab Label */}
           <button
             onClick={() => setActiveTab('erp')}
             className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
@@ -178,9 +241,16 @@ export default function App() {
             }`}
           >
             <GraduationCap className="h-4 w-4" />
-            <span>Academic & Financial ERP</span>
+            <span>
+              {userRole === 'student' && 'Academic & Financial ERP'}
+              {userRole === 'faculty' && 'Grading & Attendance Ledger'}
+              {userRole === 'hod' && 'Department ERP & Condonation'}
+              {userRole === 'janitorial' && 'Custodial Facilities Ledger'}
+              {userRole === 'admin' && 'Institutional ERP Administration'}
+            </span>
           </button>
 
+          {/* TAB 3: Role-based Cabin / Appointments Tab Label */}
           <button
             onClick={() => setActiveTab('cabin')}
             className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
@@ -190,9 +260,20 @@ export default function App() {
             }`}
           >
             <Users className="h-4 w-4" />
-            <span>Faculty Cabin Radar</span>
+            <span>
+              {userRole === 'student' && 'Faculty Cabin Radar (Book Slot)'}
+              {(userRole === 'faculty' || userRole === 'hod') && 'Cabin Desk & Student Appointments'}
+              {userRole === 'janitorial' && 'Staff Cabin Registry'}
+              {userRole === 'admin' && 'All Cabin Bookings Log'}
+            </span>
+            {(userRole === 'faculty' || userRole === 'hod') && pendingAppointmentsCount > 0 && (
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
+                {pendingAppointmentsCount}
+              </span>
+            )}
           </button>
 
+          {/* TAB 4: Helpdesk */}
           <button
             onClick={() => setActiveTab('grievance')}
             className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
@@ -205,6 +286,7 @@ export default function App() {
             <span>Geo-Tagged Helpdesk</span>
           </button>
 
+          {/* TAB 5: Janitorial Controls */}
           <button
             onClick={() => setActiveTab('janitorial')}
             className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
@@ -265,15 +347,21 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 2: Unified Academic ERP Hub */}
+        {/* Tab 2: Role-based ERP Hub */}
         {activeTab === 'erp' && (
           <ErpHub userRole={userRole} />
         )}
 
-        {/* Tab 3: Dynamic Cabin Occupancy Radar */}
+        {/* Tab 3: Dynamic Cabin Occupancy Radar & Student Appointments Desk */}
         {activeTab === 'cabin' && (
           <CabinRadar
             userRole={userRole}
+            appointments={appointments}
+            onAcceptAppointment={handleAcceptAppointment}
+            onRejectAppointment={handleRejectAppointment}
+            onBookAppointment={handleBookAppointment}
+            facultyList={facultyList}
+            onUpdateFacultyStatus={handleUpdateFacultyStatus}
             onNavigateToNode={handleNavigateToNode}
           />
         )}
@@ -315,7 +403,7 @@ export default function App() {
         onScanComplete={handleScanComplete}
       />
 
-      {/* Emergency SOS Evacuation Modal */}
+      {/* Emergency SOS Evacuation Modal with Confirmation Prompt */}
       <SosModal
         isOpen={isSosOpen}
         onClose={() => setIsSosOpen(false)}
