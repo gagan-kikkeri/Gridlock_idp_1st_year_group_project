@@ -287,9 +287,9 @@ export default function BuildingMap({
                 {isBlocked && (
                   <g transform={`translate(${(x1 + x2) / 2}, ${(y1 + y2) / 2})`}>
                     <rect
-                      x="-65"
+                      x="-75"
                       y="-14"
-                      width="130"
+                      width="150"
                       height="28"
                       rx="6"
                       fill="#78350f"
@@ -301,11 +301,11 @@ export default function BuildingMap({
                       y="4"
                       textAnchor="middle"
                       fill="#fef3c7"
-                      fontSize="9"
+                      fontSize="8.5"
                       fontWeight="800"
                       fontFamily="system-ui"
                     >
-                      ⚠️ WET FLOOR DETOUR
+                      🧹 CLEANING IN PROGRESS (AVOID)
                     </text>
                   </g>
                 )}

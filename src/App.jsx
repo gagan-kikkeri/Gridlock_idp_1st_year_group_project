@@ -41,8 +41,27 @@ export default function App() {
   const [startNodeId, setStartNodeId] = useState('N_ENTRANCE');
   const [targetNodeId, setTargetNodeId] = useState('N_HOD');
   
-  // Real-time Hazard Map
-  const [hazardMap, setHazardMap] = useState({});
+  // Real-time Hazard Map & Cleaning Reports
+  const [hazardMap, setHazardMap] = useState({
+    'e-gf-06': { isBlocked: true, type: 'Deep Mopping & Wet Floor' }
+  });
+
+  const [cleaningReports, setCleaningReports] = useState([
+    {
+      id: "CLN-801",
+      edgeId: "e-gf-06",
+      locationName: "Ground Central Corridor West",
+      floor: 0,
+      cleaningType: "Deep Mopping & Wet Floor",
+      durationMinutes: "25",
+      notes: "Detergent mopping in progress. High slipping risk. Cones placed.",
+      photoUrl: "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=400&auto=format&fit=crop&q=80",
+      photoLabel: "Wet Floor Warning Cones Placed",
+      startedAt: "10:15 AM",
+      janitorName: "Ramesh M",
+      status: "In Progress"
+    }
+  ]);
 
   // Shared Faculty & Appointments State
   const [facultyList, setFacultyList] = useState(FACULTY_ROSTER);
@@ -97,7 +116,36 @@ export default function App() {
     }
   };
 
-  // Handler for Janitorial hazard toggle
+  // Handler for Janitorial cleaning upload (blocks route)
+  const handleUploadCleaning = (newReport) => {
+    setCleaningReports(prev => [newReport, ...prev]);
+    setHazardMap(prev => ({
+      ...prev,
+      [newReport.edgeId]: { isBlocked: true, type: newReport.cleaningType }
+    }));
+    setNotification(`🧹 Cleaning uploaded for ${newReport.locationName}. Route automatically blocked in navigation!`);
+  };
+
+  // Handler for Janitorial cleaning completion (reopens route)
+  const handleCompleteCleaning = (reportId, edgeId) => {
+    setCleaningReports(prev => prev.map(r => {
+      if (r.id === reportId) {
+        return { 
+          ...r, 
+          status: 'Completed', 
+          completedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+        };
+      }
+      return r;
+    }));
+    setHazardMap(prev => {
+      const copy = { ...prev };
+      delete copy[edgeId];
+      return copy;
+    });
+    setNotification(`✓ Corridor marked Cleaned & Reopened! Optimal route restored in app.`);
+  };
+
   const handleToggleHazard = (edgeId, isBlocked) => {
     setHazardMap(prev => ({
       ...prev,
@@ -106,14 +154,19 @@ export default function App() {
 
     setNotification(
       isBlocked 
-        ? `⚠️ Wet floor hazard activated. Edge solver inflated cost ($W_{active} = W_{base} + \infty$). Detour recalculated!`
-        : `✓ Corridor marked clear. Standard edge weights restored.`
+        ? `⚠️ Cleaning hazard flagged. Route automatically avoided in navigation.`
+        : `✓ Corridor marked clear. Standard route restored.`
     );
   };
 
   const handleClearAllHazards = () => {
     setHazardMap({});
-    setNotification('All corridor hazards cleared. Optimal walking paths restored.');
+    setCleaningReports(prev => prev.map(r => ({
+      ...r,
+      status: 'Completed',
+      completedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    })));
+    setNotification('All corridor cleaning zones cleared. All routes reopened in app.');
   };
 
   // Handler for Cabin Radar navigate-to
@@ -296,7 +349,7 @@ export default function App() {
             }`}
           >
             <AlertTriangle className="h-4 w-4" />
-            <span>Janitorial Detour Controls</span>
+            <span>Janitor Cleaning & Route Avoidance</span>
             {activeHazardCount > 0 && (
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
                 {activeHazardCount}
@@ -374,12 +427,15 @@ export default function App() {
           />
         )}
 
-        {/* Tab 5: Janitorial Facilities Hazard Controls */}
+        {/* Tab 5: Janitorial Cleaning & Route Avoidance Portal */}
         {activeTab === 'janitorial' && (
           <JanitorialControls
             hazardMap={hazardMap}
             onToggleHazard={handleToggleHazard}
             onClearAllHazards={handleClearAllHazards}
+            cleaningReports={cleaningReports}
+            onUploadCleaning={handleUploadCleaning}
+            onCompleteCleaning={handleCompleteCleaning}
           />
         )}
       </main>

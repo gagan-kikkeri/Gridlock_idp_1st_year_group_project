@@ -219,7 +219,7 @@ export default function NavigationPanel({
             <div className="flex items-start gap-2 rounded-lg bg-amber-500/15 border border-amber-500/40 p-2.5 text-xs text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
               <div>
-                <span className="font-bold">Dynamic Detour Rerouted:</span> Edge weight inflation ($W_{active} = W_{base} + \infty$) avoided custodial hazard zone. Route safely diverted through clear corridors.
+                <span className="font-bold">Cleaning Detour Active:</span> Custodial staff uploaded active cleaning/wet floor for this section. The app has dynamically recalculated your route to bypass the affected corridor safely.
               </div>
             </div>
           )}

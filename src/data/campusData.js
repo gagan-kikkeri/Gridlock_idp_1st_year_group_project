@@ -312,7 +312,7 @@ export const SPATIAL_NODES = {
 // Realistic physical walking graph edges with base distances in meters
 export const GRAPH_EDGES = [
   { id: "e-gf-01", u: "N_ENTRANCE", v: "N_LOBBY", distance: 16, corridor: "Entrance Walkway" },
-  { id: "e-gf-02", u: "N_LOBBY", v: "N_CORR_W", distance: 18, corridor: "Lobby-West Corridor" },
+  { id: "e-gf-02", u: "N_LOBBY", v: "N_CORR_W", distance: 18, corridor: "Lobby-West Corridor", canHaveHazard: true },
   { id: "e-gf-03", u: "N_CORR_W", v: "N_CANTEEN", distance: 14, corridor: "West Amenity Passage" },
   { id: "e-gf-04", u: "N_CORR_W", v: "N_SYS_LAB", distance: 18, corridor: "Systems Lab Entrance" },
   { id: "e-gf-05", u: "N_CORR_W", v: "N_AI_LAB", distance: 22, corridor: "AI Lab Approach" },
@@ -321,7 +321,7 @@ export const GRAPH_EDGES = [
   { id: "e-gf-08", u: "N_CORR_C", v: "N_STAIR_G", distance: 12, corridor: "Staircase 1 Foyer" },
   { id: "e-gf-09", u: "N_CORR_C", v: "N_LIFT_G", distance: 12, corridor: "Elevator 1 Foyer" },
   { id: "e-gf-10", u: "N_CORR_E", v: "N_SEMINAR", distance: 20, corridor: "Auditorium Walkway" },
-  { id: "e-gf-11", u: "N_CORR_E", v: "N_RESTROOM_G", distance: 22, corridor: "Hygiene Wing Passage" },
+  { id: "e-gf-11", u: "N_CORR_E", v: "N_RESTROOM_G", distance: 22, corridor: "Hygiene Wing Passage", canHaveHazard: true },
   { id: "e-gf-12", u: "N_CORR_E", v: "N_FIRE_EXIT_S", distance: 18, corridor: "South Egress Route" },
   { id: "e-gf-13", u: "N_LOBBY", v: "N_ASSEMBLY", distance: 25, corridor: "Main Assembly Path" },
   { id: "e-gf-14", u: "N_FIRE_EXIT_S", v: "N_ASSEMBLY", distance: 30, corridor: "South Evacuation Trail" },
@@ -338,7 +338,7 @@ export const GRAPH_EDGES = [
   { id: "e-1f-04", u: "N_1F_CORR_C", v: "N_1F_CORR_E", distance: 26, corridor: "1F East Academic Passage", canHaveHazard: true },
   { id: "e-1f-05", u: "N_1F_CORR_W", v: "N_HOD", distance: 18, corridor: "HOD Executive Suite Entrance" },
   { id: "e-1f-06", u: "N_1F_CORR_W", v: "N_FACULTY", distance: 20, corridor: "Staff Consultation Chambers" },
-  { id: "e-1f-07", u: "N_1F_CORR_W", v: "N_LIBRARY", distance: 22, corridor: "Library & OPAC Wing" },
+  { id: "e-1f-07", u: "N_1F_CORR_W", v: "N_LIBRARY", distance: 22, corridor: "Library & OPAC Wing", canHaveHazard: true },
   { id: "e-1f-08", u: "N_1F_CORR_E", v: "N_LH_101", distance: 18, corridor: "Lecture Hall 101 Access" },
   { id: "e-1f-09", u: "N_1F_CORR_E", v: "N_LH_102", distance: 20, corridor: "Lecture Hall 102 Access" },
   { id: "e-1f-10", u: "N_1F_CORR_E", v: "N_IOT_LAB", distance: 24, corridor: "IoT Lab Access" },
