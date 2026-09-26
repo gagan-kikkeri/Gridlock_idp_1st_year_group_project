@@ -1,0 +1,44 @@
+{
+  "building": {
+    "id": "bmsit-cse-apex",
+    "name": "BMSIT Department of Computer Science & Engineering",
+    "institution": "BMS Institute of Technology & Management",
+    "campus": "Yelahanka, Bengaluru - 560064",
+    "block": "Apex Academic Block",
+    "totalFloors": 2,
+    "floors": [
+      {
+        "id": 0,
+        "code": "GF",
+        "name": "Ground Floor",
+        "elevationMeters": 0.0,
+        "description": "Main Atrium, Reception, Systems Lab, AI & ML Lab, CSE Auditorium, Canteen Lounge, Emergency Assembly"
+      },
+      {
+        "id": 1,
+        "code": "1F",
+        "name": "First Floor",
+        "elevationMeters": 4.2,
+        "description": "HOD Executive Suite (Dr. Harish Kumar N), Faculty Consultation Cabins (F1-F12), Smart Lecture Halls 101/102, Digital Library, IoT Lab"
+      }
+    ]
+  },
+  "rooms": [
+    { "id": "MAIN-ENTRANCE", "floor": 0, "name": "Main Campus Entrance & RFID Turnstiles", "qr": "QR-G-01", "type": "entry" },
+    { "id": "LOBBY", "floor": 0, "name": "Central Atrium & Information Helpdesk", "qr": "QR-G-03", "type": "lobby" },
+    { "id": "SYS-LAB", "floor": 0, "name": "Systems & OS Laboratory (Lab 01)", "qr": "QR-G-05", "type": "lab", "capacity": 60 },
+    { "id": "AI-LAB", "floor": 0, "name": "AI & Machine Learning GPU Lab (Lab 02)", "qr": "QR-G-06", "type": "lab", "capacity": 60 },
+    { "id": "SEMINAR", "floor": 0, "name": "CSE Main Seminar Auditorium", "qr": "QR-G-10", "type": "hall", "capacity": 250 },
+    { "id": "CAFETERIA", "floor": 0, "name": "Cafeteria & Student Lounge", "qr": "QR-G-02", "type": "amenity" },
+    { "id": "RESTROOM-G", "floor": 0, "name": "Ground Floor Hygiene Wing", "qr": "QR-G-12", "type": "amenity" },
+    { "id": "HOD-OFFICE", "floor": 1, "name": "HOD Suite - Dr. Harish Kumar N", "qr": "QR-1-05", "type": "office" },
+    { "id": "FACULTY-CABINS", "floor": 1, "name": "Faculty Chambers (Cabins F1-F12)", "qr": "QR-1-06", "type": "office" },
+    { "id": "LH-101", "floor": 1, "name": "Lecture Hall 101 (2nd Year CSE)", "qr": "QR-1-07", "type": "classroom", "capacity": 75 },
+    { "id": "LH-102", "floor": 1, "name": "Lecture Hall 102 (Smart Hall)", "qr": "QR-1-08", "type": "classroom", "capacity": 75 },
+    { "id": "LIBRARY", "floor": 1, "name": "Digital Library & OPAC Center", "qr": "QR-1-10", "type": "amenity" },
+    { "id": "IOT-LAB", "floor": 1, "name": "IoT & Embedded Systems Lab", "qr": "QR-1-11", "type": "lab" },
+    { "id": "FIRE-EXIT-S", "floor": 0, "name": "South Emergency Fire Exit", "qr": "QR-G-13", "type": "emergency" },
+    { "id": "FIRE-EXIT-N", "floor": 1, "name": "North Emergency Fire Staircase", "qr": "QR-1-09", "type": "emergency" },
+    { "id": "ASSEMBLY-G", "floor": 0, "name": "Designated Open-Air Safe Assembly Ground", "qr": "QR-G-14", "type": "emergency" }
+  ]
+}
