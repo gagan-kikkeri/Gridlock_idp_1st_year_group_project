@@ -14,7 +14,8 @@ import {
   RotateCw, 
   CornerDownRight, 
   Sparkles,
-  QrCode
+  QrCode,
+  Accessibility
 } from 'lucide-react';
 
 export default function NavigationPanel({
@@ -26,7 +27,10 @@ export default function NavigationPanel({
   onOpenScanner,
   onClearRoute,
   onSwapEndpoints,
-  nodes = SPATIAL_NODES
+  nodes = SPATIAL_NODES,
+  isAccessibleMode = false,
+  onToggleAccessibleMode,
+  mobilityProfile = {}
 }) {
   const [showDirections, setShowDirections] = useState(true);
 
@@ -156,6 +160,40 @@ export default function NavigationPanel({
             </select>
           </div>
         </div>
+
+        {/* Universal Accessibility / No-Stairs Mode Toggle */}
+        <div className="pt-2.5 mt-0.5 border-t border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Accessibility className={`h-4 w-4 ${isAccessibleMode ? 'text-purple-400' : 'text-slate-400'}`} />
+            <div>
+              <div className="text-xs font-bold text-white flex items-center gap-1.5 leading-tight">
+                <span>Accessible / No-Stairs Route</span>
+                {mobilityProfile?.hasMobilityImpairment && (
+                  <span className="rounded bg-purple-500/20 px-1.5 py-0.2 text-[9px] text-purple-300 font-normal border border-purple-500/30">
+                    Profile Enforced
+                  </span>
+                )}
+              </div>
+              <div className="text-[10px] text-slate-400">
+                {isAccessibleMode ? 'Elevator 1 & Ramps Mandated (Zero Stairs)' : 'Standard stairs & walkways active'}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onToggleAccessibleMode?.(!isAccessibleMode)}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              isAccessibleMode ? 'bg-purple-600' : 'bg-slate-700'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                isAccessibleMode ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Quick Destination Presets */}
@@ -221,6 +259,16 @@ export default function NavigationPanel({
               <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
               <div>
                 <span className="font-bold">Cleaning Detour Active:</span> Custodial staff uploaded active cleaning/wet floor for this section. The app has dynamically recalculated your route to bypass the affected corridor safely.
+              </div>
+            </div>
+          )}
+
+          {/* Accessible Route Notification */}
+          {(activeRoute.isAccessible || isAccessibleMode) && (
+            <div className="flex items-start gap-2 rounded-lg bg-purple-500/15 border border-purple-500/40 p-2.5 text-xs text-purple-200">
+              <Accessibility className="h-4 w-4 shrink-0 text-purple-400 mt-0.5" />
+              <div>
+                <span className="font-bold">♿ Stair-Free Accessible Route:</span> Staircases are bypassed ($W=\infty$). Route exclusively navigates through <strong>Passenger Elevator 1</strong> and <strong>Ground Ramps</strong>.
               </div>
             </div>
           )}

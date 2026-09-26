@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { STUDENT_ERP, FACULTY_CLASS_ROSTER } from '../data/campusData.js';
+import { STUDENT_ERP, FACULTY_CLASS_ROSTER, REGISTERED_STUDENTS } from '../data/campusData.js';
 import { 
   GraduationCap, 
   CheckCircle2, 
@@ -20,14 +20,27 @@ import {
   Users,
   Award,
   Lock,
-  Database
+  Database,
+  Accessibility,
+  HeartPulse,
+  Activity,
+  ArrowRight
 } from 'lucide-react';
 
-export default function ErpHub({ userRole }) {
+export default function ErpHub({ 
+  userRole, 
+  mobilityProfile = STUDENT_ERP.profile.mobilityProfile,
+  onUpdateMobilityProfile,
+  isAccessibleMode = false,
+  onToggleAccessibleMode
+}) {
   // Student view states
   const [activeTab, setActiveTab] = useState('attendance');
   const [qrToken, setQrToken] = useState('GL-SEC-98421');
   const [qrRefreshCountdown, setQrRefreshCountdown] = useState(30);
+  const [studentsRoster, setStudentsRoster] = useState(REGISTERED_STUDENTS);
+  const [customMobilityNotes, setCustomMobilityNotes] = useState(mobilityProfile?.notes || '');
+  const [mobilityToast, setMobilityToast] = useState(false);
   const [showHallTicketModal, setShowHallTicketModal] = useState(false);
 
   // Faculty view states
@@ -444,6 +457,20 @@ export default function ErpHub({ userRole }) {
           >
             Dynamic Digital ID
           </button>
+          <button
+            onClick={() => setActiveTab('accessibility')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+              activeTab === 'accessibility'
+                ? 'bg-purple-600 text-white shadow'
+                : 'text-purple-300 hover:text-white hover:bg-purple-950/40 border border-purple-800/40'
+            }`}
+          >
+            <Accessibility className="h-3.5 w-3.5" />
+            <span>Mobility & Injury Profile</span>
+            {mobilityProfile?.hasMobilityImpairment && (
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -669,6 +696,310 @@ export default function ErpHub({ userRole }) {
               <div className="text-[9px] text-slate-500">
                 Auto-refreshes in {qrRefreshCountdown}s to eliminate credential spoofing
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: MOBILITY & INJURY ACCESSIBILITY PROFILE */}
+      {activeTab === 'accessibility' && (
+        <div className="flex flex-col gap-5">
+          {/* Header Banner */}
+          <div className="rounded-xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-indigo-950/80 p-5 border border-purple-500/30">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-3 rounded-xl bg-purple-600/30 text-purple-300 border border-purple-400/30">
+                  <Accessibility className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>Physical Accessibility & Mobility Declaration Desk</span>
+                    <span className="rounded bg-purple-500/20 px-2 py-0.5 text-[10px] text-purple-300 border border-purple-500/30">
+                      UNIVERSAL ACCESS
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                    Students, faculty, and visitors can declare temporary leg injuries (casts, fractures, ligament sprains, knee braces, crutches) or permanent wheelchair mobility impairments.
+                    Once declared, <strong>Gridlock automatically enforces stair-free routing</strong> across all building navigation, mandating Passenger Elevator 1 and ground level ramps.
+                  </p>
+                </div>
+              </div>
+
+              {/* Live Status Badge */}
+              <div className="shrink-0 flex flex-col items-end">
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${
+                  mobilityProfile?.hasMobilityImpairment
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                    : 'bg-blue-500/20 text-blue-300 border-blue-400/40'
+                }`}>
+                  <span className={`h-2 w-2 rounded-full ${mobilityProfile?.hasMobilityImpairment ? 'bg-emerald-400 animate-ping' : 'bg-blue-400'}`}></span>
+                  <span>{mobilityProfile?.hasMobilityImpairment ? '♿ No-Stairs Active' : '🚶 Standard Mobility'}</span>
+                </span>
+                <span className="text-[10px] text-slate-400 mt-1">
+                  Elevator & Ramp Transit {mobilityProfile?.hasMobilityImpairment ? 'Enforced' : 'Optional'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Self-Declaration Action Cards */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <Activity className="h-4 w-4 text-purple-400" />
+              <span>Select Your Physical Mobility Status</span>
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Option 1: Standard Mobility */}
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateMobilityProfile?.("None");
+                  setMobilityToast(true);
+                  setTimeout(() => setMobilityToast(false), 3000);
+                }}
+                className={`flex flex-col gap-1.5 p-4 rounded-xl border text-left transition ${
+                  mobilityProfile?.conditionType === 'None' || !mobilityProfile?.hasMobilityImpairment
+                    ? 'bg-blue-600/20 border-blue-400 shadow-md shadow-blue-500/10 ring-1 ring-blue-400'
+                    : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl">🚶</span>
+                  {(!mobilityProfile?.hasMobilityImpairment || mobilityProfile?.conditionType === 'None') && (
+                    <CheckCircle2 className="h-4 w-4 text-blue-400" />
+                  )}
+                </div>
+                <div className="text-xs font-bold text-white">Standard Walking</div>
+                <div className="text-[11px] text-slate-400">
+                  Full mobility. Standard staircases and walkways permitted.
+                </div>
+              </button>
+
+              {/* Option 2: Temporary Leg Injury */}
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateMobilityProfile?.("Temporary Leg Injury / Fracture");
+                  setMobilityToast(true);
+                  setTimeout(() => setMobilityToast(false), 3000);
+                }}
+                className={`flex flex-col gap-1.5 p-4 rounded-xl border text-left transition ${
+                  mobilityProfile?.conditionType === 'Temporary Leg Injury / Fracture'
+                    ? 'bg-purple-600/20 border-purple-400 shadow-md shadow-purple-500/10 ring-1 ring-purple-400'
+                    : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl">🩹</span>
+                  {mobilityProfile?.conditionType === 'Temporary Leg Injury / Fracture' && (
+                    <CheckCircle2 className="h-4 w-4 text-purple-400" />
+                  )}
+                </div>
+                <div className="text-xs font-bold text-white">Temporary Leg Injury / Fracture</div>
+                <div className="text-[11px] text-purple-300">
+                  Orthopaedic cast/boot. <strong>Zero stairs</strong>; mandates Elevator 1.
+                </div>
+              </button>
+
+              {/* Option 3: Wheelchair User */}
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateMobilityProfile?.("Wheelchair User");
+                  setMobilityToast(true);
+                  setTimeout(() => setMobilityToast(false), 3000);
+                }}
+                className={`flex flex-col gap-1.5 p-4 rounded-xl border text-left transition ${
+                  mobilityProfile?.conditionType === 'Wheelchair User'
+                    ? 'bg-emerald-600/20 border-emerald-400 shadow-md shadow-emerald-500/10 ring-1 ring-emerald-400'
+                    : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl">🦽</span>
+                  {mobilityProfile?.conditionType === 'Wheelchair User' && (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  )}
+                </div>
+                <div className="text-xs font-bold text-white">Wheelchair User</div>
+                <div className="text-[11px] text-emerald-300">
+                  Permanent accessibility. Mandates lifts and ground ramps.
+                </div>
+              </button>
+
+              {/* Option 4: Crutches / Sprain */}
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateMobilityProfile?.("Crutches / Sprain");
+                  setMobilityToast(true);
+                  setTimeout(() => setMobilityToast(false), 3000);
+                }}
+                className={`flex flex-col gap-1.5 p-4 rounded-xl border text-left transition ${
+                  mobilityProfile?.conditionType === 'Crutches / Sprain'
+                    ? 'bg-amber-600/20 border-amber-400 shadow-md shadow-amber-500/10 ring-1 ring-amber-400'
+                    : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl">🩼</span>
+                  {mobilityProfile?.conditionType === 'Crutches / Sprain' && (
+                    <CheckCircle2 className="h-4 w-4 text-amber-400" />
+                  )}
+                </div>
+                <div className="text-xs font-bold text-white">Crutches / Ankle Sprain</div>
+                <div className="text-[11px] text-amber-300">
+                  Assisted walking. Avoids stairs to prevent slip/fall risk.
+                </div>
+              </button>
+
+              {/* Option 5: Reduced Mobility */}
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateMobilityProfile?.("Reduced Mobility");
+                  setMobilityToast(true);
+                  setTimeout(() => setMobilityToast(false), 3000);
+                }}
+                className={`flex flex-col gap-1.5 p-4 rounded-xl border text-left transition ${
+                  mobilityProfile?.conditionType === 'Reduced Mobility'
+                    ? 'bg-indigo-600/20 border-indigo-400 shadow-md shadow-indigo-500/10 ring-1 ring-indigo-400'
+                    : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl">🦿</span>
+                  {mobilityProfile?.conditionType === 'Reduced Mobility' && (
+                    <CheckCircle2 className="h-4 w-4 text-indigo-400" />
+                  )}
+                </div>
+                <div className="text-xs font-bold text-white">Reduced Mobility / Knee Pain</div>
+                <div className="text-[11px] text-indigo-300">
+                  Elderly/joint pain. Gentle transit prioritizing elevators.
+                </div>
+              </button>
+            </div>
+
+            {/* Toast feedback */}
+            {mobilityToast && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-200 text-xs animate-bounce">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                <span>
+                  ✓ Mobility profile updated! Navigation engine is now actively directing you along stair-free routes with elevator transit.
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Clinical / Medical Advisory Notes */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center justify-between">
+              <span>Physician Advisory & Recovery Notes</span>
+              <span className="text-[10px] text-slate-400 font-normal">Optional clinical record</span>
+            </h4>
+            <textarea
+              rows={2}
+              value={customMobilityNotes}
+              onChange={(e) => setCustomMobilityNotes(e.target.value)}
+              placeholder="e.g. 'Right leg tibia hairline fracture; cast until Oct 30. Strictly prohibited from climbing stairs by campus physician.'"
+              className="w-full rounded-xl bg-slate-900 border border-slate-700 p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+            />
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  alert("Medical notes saved to institutional health ledger!");
+                }}
+                className="flex items-center gap-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white px-3.5 py-1.5 text-xs font-semibold shadow transition"
+              >
+                <Save className="h-3.5 w-3.5" />
+                Save Notes to Record
+              </button>
+            </div>
+          </div>
+
+          {/* Section B Student Accessibility Roster (For Teachers, Admin & Classmates) */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-400" />
+                  <span>Section B Class Accessibility Directory</span>
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Institutional record of declared physical mobility and accessibility profiles in this class.
+                </p>
+              </div>
+              <span className="text-xs font-mono text-slate-400">
+                {studentsRoster.filter(s => s.mobilityProfile?.hasMobilityImpairment).length} with active assistance needs
+              </span>
+            </div>
+
+            <div className="overflow-x-auto rounded-lg border border-slate-800">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-900 text-[11px] text-slate-400 uppercase font-mono border-b border-slate-800">
+                  <tr>
+                    <th className="py-2.5 px-3">Student Name</th>
+                    <th className="py-2.5 px-3">USN</th>
+                    <th className="py-2.5 px-3">Mobility Condition</th>
+                    <th className="py-2.5 px-3">Routing Requirement</th>
+                    <th className="py-2.5 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-medium">
+                  {studentsRoster.map((st) => (
+                    <tr key={st.usn} className="hover:bg-slate-900/40 transition">
+                      <td className="py-2.5 px-3 text-white font-semibold flex items-center gap-2">
+                        <span>{st.mobilityProfile?.hasMobilityImpairment ? '♿' : '🚶'}</span>
+                        <span>{st.name}</span>
+                      </td>
+                      <td className="py-2.5 px-3 font-mono text-slate-400">{st.usn}</td>
+                      <td className="py-2.5 px-3">
+                        <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${
+                          st.mobilityProfile?.hasMobilityImpairment
+                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                            : 'bg-slate-800 text-slate-400'
+                        }`}>
+                          {st.mobilityProfile?.conditionType || 'Standard'}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-[11px] text-slate-300">
+                        {st.mobilityProfile?.hasMobilityImpairment
+                          ? 'Strictly Elevator 1 & Ramps (No Stairs)'
+                          : 'Standard stairs & walkways'}
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Toggle student mobility profile
+                            setStudentsRoster(prev => prev.map(item => {
+                              if (item.usn === st.usn) {
+                                const newImpaired = !item.mobilityProfile?.hasMobilityImpairment;
+                                return {
+                                  ...item,
+                                  mobilityProfile: {
+                                    hasMobilityImpairment: newImpaired,
+                                    conditionType: newImpaired ? "Temporary Leg Injury / Fracture" : "None",
+                                    requiresRampOrLift: newImpaired,
+                                    declaredAt: newImpaired ? new Date().toISOString().split('T')[0] : null,
+                                    notes: newImpaired ? "Assisted walking declared" : "Full mobility"
+                                  }
+                                };
+                              }
+                              return item;
+                            }));
+                          }}
+                          className="rounded bg-slate-800 hover:bg-slate-700 px-2 py-1 text-[10px] font-semibold text-slate-300 transition"
+                        >
+                          {st.mobilityProfile?.hasMobilityImpairment ? 'Clear Injury' : 'Declare Injury'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

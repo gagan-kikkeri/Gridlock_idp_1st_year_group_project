@@ -7,7 +7,8 @@ import {
   Activity, 
   Layers,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  Accessibility
 } from 'lucide-react';
 
 export default function Header({ 
@@ -15,7 +16,10 @@ export default function Header({
   onRoleChange, 
   onOpenScanner, 
   onTriggerSos,
-  activeHazardCount
+  activeHazardCount,
+  isAccessibleMode = false,
+  onToggleAccessibleMode,
+  onOpenAiCopilot
 }) {
   const roles = [
     { id: 'student', label: 'Student', icon: '🎓', name: 'Gagan N Prasad', usn: '26UG1BYCS0588-T' },
@@ -65,6 +69,28 @@ export default function Header({
           >
             <QrCode className="h-4 w-4" />
             <span className="hidden md:inline">Scan QR Anchor</span>
+          </button>
+
+          {/* Accessible Mode Indicator / Toggle */}
+          {isAccessibleMode && (
+            <button
+              onClick={onToggleAccessibleMode}
+              className="flex items-center gap-1.5 rounded-lg bg-purple-500/25 hover:bg-purple-500/35 border border-purple-400/50 px-2.5 py-1.5 text-xs text-purple-200 transition"
+              title="♿ Stair-Free Mode Active (Elevator & Ramp Transit Mandated)"
+            >
+              <Accessibility className="h-4 w-4 text-purple-400" />
+              <span className="hidden sm:inline font-bold text-[11px]">♿ No-Stairs Mode</span>
+            </button>
+          )}
+
+          {/* Campus AI Copilot Button */}
+          <button
+            onClick={onOpenAiCopilot}
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-2.5 py-1.5 text-xs font-bold text-white shadow-md shadow-indigo-500/25 transition active:scale-95 border border-indigo-400/40"
+            title="Open Campus AI Assistant (Ask about lagging subjects, attendance, leg injury routing, etc.)"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+            <span className="hidden sm:inline">Ask AI</span>
           </button>
 
           {/* Emergency SOS Button (Triggers confirmation dialog) */}

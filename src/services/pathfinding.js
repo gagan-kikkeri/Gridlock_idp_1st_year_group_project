@@ -18,12 +18,13 @@ export function heuristic(nodeA, nodeB) {
 }
 
 /**
- * Build adjacency list incorporating live hazard states
+ * Build adjacency list incorporating live hazard states and accessibility constraints
  * @param {Array} edges list of graph edges
  * @param {Object} hazardMap map of edgeId -> { isBlocked: boolean, type: string }
  * @param {Object} nodes map of nodeId -> node
+ * @param {boolean} requireAccessible when true, staircases are blocked in favor of elevators/ramps
  */
-export function buildAdjacencyList(edges = GRAPH_EDGES, hazardMap = {}, nodes = SPATIAL_NODES) {
+export function buildAdjacencyList(edges = GRAPH_EDGES, hazardMap = {}, nodes = SPATIAL_NODES, requireAccessible = false) {
   const adj = {};
 
   // Initialize nodes
@@ -32,7 +33,9 @@ export function buildAdjacencyList(edges = GRAPH_EDGES, hazardMap = {}, nodes = 
   });
 
   edges.forEach((edge) => {
-    const isHazardBlocked = hazardMap[edge.id]?.isBlocked;
+    // If user has leg injury, wheelchair, or accessible mode is active, strictly bypass stairs!
+    const isStairBlocked = requireAccessible && edge.transitType === 'stairs';
+    const isHazardBlocked = hazardMap[edge.id]?.isBlocked || isStairBlocked;
     const effectiveWeight = isHazardBlocked ? (edge.distance + INFINITY_WEIGHT) : edge.distance;
 
     const uNode = nodes[edge.u];
@@ -45,7 +48,7 @@ export function buildAdjacencyList(edges = GRAPH_EDGES, hazardMap = {}, nodes = 
         baseWeight: edge.distance,
         edgeId: edge.id,
         isBlocked: !!isHazardBlocked,
-        hazardType: hazardMap[edge.id]?.type || null,
+        hazardType: isStairBlocked ? 'ACCESSIBILITY_NO_STAIRS' : (hazardMap[edge.id]?.type || null),
         corridor: edge.corridor,
         isVertical: !!edge.isVertical,
         transitType: edge.transitType || 'corridor'
@@ -57,7 +60,7 @@ export function buildAdjacencyList(edges = GRAPH_EDGES, hazardMap = {}, nodes = 
         baseWeight: edge.distance,
         edgeId: edge.id,
         isBlocked: !!isHazardBlocked,
-        hazardType: hazardMap[edge.id]?.type || null,
+        hazardType: isStairBlocked ? 'ACCESSIBILITY_NO_STAIRS' : (hazardMap[edge.id]?.type || null),
         corridor: edge.corridor,
         isVertical: !!edge.isVertical,
         transitType: edge.transitType || 'corridor'
@@ -75,9 +78,10 @@ export function buildAdjacencyList(edges = GRAPH_EDGES, hazardMap = {}, nodes = 
  * @param {Object} hazardMap 
  * @param {Object} customNodes
  * @param {Array} customEdges
- * @returns {Object} result with path, distance, detoured, directions
+ * @param {boolean} requireAccessible
+ * @returns {Object} result with path, distance, detoured, directions, isAccessible
  */
-export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}, customNodes = SPATIAL_NODES, customEdges = GRAPH_EDGES) {
+export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}, customNodes = SPATIAL_NODES, customEdges = GRAPH_EDGES, requireAccessible = false) {
   if (!startNodeId || !targetNodeId) return null;
   if (!customNodes[startNodeId] || !customNodes[targetNodeId]) return null;
 
@@ -89,12 +93,13 @@ export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}, cust
       totalDistance: 0,
       estimatedSeconds: 0,
       detoured: false,
+      isAccessible: requireAccessible,
       nodes: [node],
       directions: [`You are already at ${node.label} (${node.floor === 0 ? 'Ground Floor' : 'Floor ' + node.floor}).`]
     };
   }
 
-  const adj = buildAdjacencyList(customEdges, hazardMap, customNodes);
+  const adj = buildAdjacencyList(customEdges, hazardMap, customNodes, requireAccessible);
   const targetNode = customNodes[targetNodeId];
 
   // Open set priority queue (min-heap simulation using array for lightweight footprint)
@@ -127,7 +132,7 @@ export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}, cust
 
     // Reached destination
     if (current === targetNodeId) {
-      return reconstructPath(cameFrom, current, startNodeId, hazardMap, customNodes);
+      return reconstructPath(cameFrom, current, startNodeId, hazardMap, customNodes, requireAccessible);
     }
 
     openSet.delete(current);
@@ -159,15 +164,18 @@ export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}, cust
     totalDistance: 0,
     estimatedSeconds: 0,
     detoured: false,
+    isAccessible: requireAccessible,
     nodes: [],
-    directions: ["No safe accessible path found. Active hazards or corridor blockages prevent access."]
+    directions: [requireAccessible 
+      ? "No stair-free accessible route found between these locations. Elevator access may be blocked."
+      : "No safe accessible path found. Active hazards or corridor blockages prevent access."]
   };
 }
 
 /**
  * Reconstruct path array and build human-friendly turn-by-turn directions
  */
-function reconstructPath(cameFrom, current, startId, hazardMap, customNodes = SPATIAL_NODES) {
+function reconstructPath(cameFrom, current, startId, hazardMap, customNodes = SPATIAL_NODES, requireAccessible = false) {
   const path = [current];
   const edgeDetails = [];
   let curr = current;
@@ -186,6 +194,10 @@ function reconstructPath(cameFrom, current, startId, hazardMap, customNodes = SP
   const startNode = nodes[0];
   const endNode = nodes[nodes.length - 1];
 
+  if (requireAccessible) {
+    directions.push(`♿ Accessible Route Active: Staircase flights avoided. Proceeding via Elevator 1 & Ground Ramps.`);
+  }
+
   directions.push(`Start at ${startNode.label} (${startNode.floor === 0 ? 'Ground Floor' : '1st Floor'}).`);
 
   for (let i = 0; i < edgeDetails.length; i++) {
@@ -199,13 +211,13 @@ function reconstructPath(cameFrom, current, startId, hazardMap, customNodes = SP
         directions.push(
           edge.transitType === 'stairs'
             ? `Ascend ${fromNode.label} up to First Floor (${toNode.label}).`
-            : `Take Passenger Elevator 1 up to First Floor.`
+            : `Take Passenger Elevator 1 up to First Floor (Accessible Transit).`
         );
       } else {
         directions.push(
           edge.transitType === 'stairs'
             ? `Descend ${fromNode.label} down to Ground Floor (${toNode.label}).`
-            : `Take Passenger Elevator 1 down to Ground Floor.`
+            : `Take Passenger Elevator 1 down to Ground Floor (Accessible Transit).`
         );
       }
     } else {
@@ -237,6 +249,7 @@ function reconstructPath(cameFrom, current, startId, hazardMap, customNodes = SP
     totalDistance: totalMeters,
     estimatedSeconds,
     detoured: hasActiveHazards,
+    isAccessible: requireAccessible,
     directions
   };
 }

@@ -491,7 +491,14 @@ export const STUDENT_ERP = {
     validUpto: "June 2028",
     bloodGroup: "O+ve",
     phone: "+91 98450 12345",
-    email: "gagan.gagn.kikkeri@gmail.com"
+    email: "gagan.gagn.kikkeri@gmail.com",
+    mobilityProfile: {
+      hasMobilityImpairment: false,
+      conditionType: "None", // "None", "Wheelchair User", "Temporary Leg Injury / Fracture", "Crutches / Sprain", "Reduced Mobility"
+      requiresRampOrLift: false,
+      declaredAt: null,
+      notes: "Standard physical mobility (Full agility)"
+    }
   },
   attendance: [
     { code: "22CS21", subject: "Data Structures & Algorithms", attended: 41, total: 45, percentage: 91.1, cieMarks: 47, faculty: "Prof. Rajesh K" },
@@ -517,6 +524,75 @@ export const STUDENT_ERP = {
     }
   }
 };
+
+// Institutional Registered Students Directory with Accessibility Profiles
+export const REGISTERED_STUDENTS = [
+  {
+    usn: "26UG1BYCS0588-T",
+    name: "Gagan N Prasad",
+    section: "B",
+    semester: 2,
+    mobilityProfile: {
+      hasMobilityImpairment: false,
+      conditionType: "None",
+      requiresRampOrLift: false,
+      declaredAt: null,
+      notes: "Full mobility"
+    }
+  },
+  {
+    usn: "26UG1BYCS0293-T",
+    name: "Manav Redhu",
+    section: "B",
+    semester: 2,
+    mobilityProfile: {
+      hasMobilityImpairment: true,
+      conditionType: "Temporary Leg Injury / Fracture",
+      requiresRampOrLift: true,
+      declaredAt: "2026-09-20",
+      notes: "Right ankle ligament sprain. Assisted walking. Strictly no stairs."
+    }
+  },
+  {
+    usn: "26UG1BYCS0043-T",
+    name: "Chimbili Manju Ganesh",
+    section: "B",
+    semester: 2,
+    mobilityProfile: {
+      hasMobilityImpairment: false,
+      conditionType: "None",
+      requiresRampOrLift: false,
+      declaredAt: null,
+      notes: "Full mobility"
+    }
+  },
+  {
+    usn: "26UG1BYCS0111-T",
+    name: "Machal Ritesh Govardhan",
+    section: "B",
+    semester: 2,
+    mobilityProfile: {
+      hasMobilityImpairment: false,
+      conditionType: "None",
+      requiresRampOrLift: false,
+      declaredAt: null,
+      notes: "Full mobility"
+    }
+  },
+  {
+    usn: "26UG1BYCS0310-T",
+    name: "Rohan Verma",
+    section: "B",
+    semester: 2,
+    mobilityProfile: {
+      hasMobilityImpairment: true,
+      conditionType: "Wheelchair User",
+      requiresRampOrLift: true,
+      declaredAt: "2026-08-01",
+      notes: "Permanent wheelchair user. Requires elevator transit and entry ramps at all times."
+    }
+  }
+];
 
 // Faculty grading roster
 export const FACULTY_CLASS_ROSTER = [

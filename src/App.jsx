@@ -9,12 +9,16 @@ import GrievanceDesk from './components/GrievanceDesk.jsx';
 import JanitorialControls from './components/JanitorialControls.jsx';
 import SosModal from './components/SosModal.jsx';
 import AdminStudio from './components/AdminStudio.jsx';
+import CampusAiCopilot from './components/CampusAiCopilot.jsx';
 
 import { 
   SPATIAL_NODES, 
   GRAPH_EDGES,
   FACULTY_ROSTER, 
-  INITIAL_APPOINTMENTS 
+  INITIAL_APPOINTMENTS,
+  STUDENT_ERP,
+  FACULTY_CLASS_ROSTER,
+  REGISTERED_STUDENTS
 } from './data/campusData.js';
 import { 
   findShortestPath, 
@@ -31,7 +35,8 @@ import {
   Layers,
   ShieldCheck,
   CheckCircle2,
-  CalendarCheck
+  CalendarCheck,
+  Accessibility
 } from 'lucide-react';
 
 export default function App() {
@@ -43,6 +48,10 @@ export default function App() {
   // Dynamic Spatial Nodes and Graph Edges (Extensible by Admin Studio)
   const [nodes, setNodes] = useState(SPATIAL_NODES);
   const [edges, setEdges] = useState(GRAPH_EDGES);
+
+  // Student Physical Mobility & Disability/Injury Profile (Universal Accessibility)
+  const [mobilityProfile, setMobilityProfile] = useState(STUDENT_ERP.profile.mobilityProfile);
+  const [isAccessibleMode, setIsAccessibleMode] = useState(false);
 
   const [startNodeId, setStartNodeId] = useState('N_ENTRANCE');
   const [targetNodeId, setTargetNodeId] = useState('N_HOD');
@@ -87,16 +96,34 @@ export default function App() {
     }
   }, [notification]);
 
-  // Compute A* Pathfinding Route dynamically
+  // Compute A* Pathfinding Route dynamically (enforces stair-free elevator transit when isAccessibleMode is true)
   const activeRoute = useMemo(() => {
     if (!startNodeId || !targetNodeId) return null;
-    return findShortestPath(startNodeId, targetNodeId, hazardMap, nodes, edges);
-  }, [startNodeId, targetNodeId, hazardMap, nodes, edges]);
+    return findShortestPath(startNodeId, targetNodeId, hazardMap, nodes, edges, isAccessibleMode);
+  }, [startNodeId, targetNodeId, hazardMap, nodes, edges, isAccessibleMode]);
 
   // Compute Emergency Egress Route
   const egressRoute = useMemo(() => {
     return findNearestEmergencyExit(startNodeId, hazardMap, nodes, edges);
   }, [startNodeId, hazardMap, nodes, edges]);
+
+  // Handler for declaring/updating student disability or temporary leg injury
+  const handleUpdateMobilityProfile = (conditionType, notes = '') => {
+    const isImpaired = conditionType !== 'None';
+    setMobilityProfile({
+      hasMobilityImpairment: isImpaired,
+      conditionType,
+      requiresRampOrLift: isImpaired,
+      declaredAt: isImpaired ? new Date().toISOString().split('T')[0] : null,
+      notes: notes || (isImpaired ? `Declared ${conditionType}` : 'Standard mobility')
+    });
+    setIsAccessibleMode(isImpaired);
+    setNotification(
+      isImpaired 
+        ? `♿ Accessibility: ${conditionType} declared. Navigation now mandates Elevator 1 & Ramps with zero stairs!` 
+        : `🚶 Standard walking mobility restored. Standard stairs & walkways active.`
+    );
+  };
 
   // Handler for QR Scan confirmation
   const handleScanComplete = (nodeId) => {
@@ -305,6 +332,12 @@ export default function App() {
         onOpenScanner={() => setIsScannerOpen(true)}
         onTriggerSos={() => setIsSosOpen(true)}
         activeHazardCount={activeHazardCount}
+        isAccessibleMode={isAccessibleMode}
+        onToggleAccessibleMode={() => setIsAccessibleMode(prev => !prev)}
+        onOpenAiCopilot={() => {
+          const aiBtn = document.querySelector('button[title="Open Gridlock Campus AI Assistant"]');
+          if (aiBtn) aiBtn.click();
+        }}
       />
 
       {/* Role-Specific Module Navigation Bar */}
@@ -453,6 +486,9 @@ export default function App() {
                   setTargetNodeId(temp);
                 }}
                 nodes={nodes}
+                isAccessibleMode={isAccessibleMode}
+                onToggleAccessibleMode={() => setIsAccessibleMode(prev => !prev)}
+                mobilityProfile={mobilityProfile}
               />
             </div>
           </div>
@@ -460,7 +496,13 @@ export default function App() {
 
         {/* Tab 2: Role-based ERP Hub */}
         {activeTab === 'erp' && (
-          <ErpHub userRole={userRole} />
+          <ErpHub 
+            userRole={userRole}
+            mobilityProfile={mobilityProfile}
+            onUpdateMobilityProfile={handleUpdateMobilityProfile}
+            isAccessibleMode={isAccessibleMode}
+            onToggleAccessibleMode={() => setIsAccessibleMode(prev => !prev)}
+          />
         )}
 
         {/* Tab 3: Dynamic Cabin Occupancy Radar & Student Appointments Desk (Hidden for Janitor) */}
@@ -521,6 +563,34 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Universal Campus AI Copilot Assistant */}
+      <CampusAiCopilot
+        userRole={userRole}
+        studentErp={STUDENT_ERP}
+        facultyRoster={facultyList}
+        facultyClassRoster={FACULTY_CLASS_ROSTER}
+        appointments={appointments}
+        hazardMap={hazardMap}
+        nodes={nodes}
+        edges={edges}
+        isAccessibleMode={isAccessibleMode}
+        mobilityProfile={mobilityProfile}
+        onNavigate={(start, target, accessible) => {
+          if (start) setStartNodeId(start);
+          if (target) setTargetNodeId(target);
+          if (accessible !== undefined) setIsAccessibleMode(accessible);
+          const targetNode = nodes[target];
+          if (targetNode) setActiveFloor(targetNode.floor);
+          setActiveTab('wayfinding');
+          setNotification(`📍 Route loaded: ${nodes[start]?.label || 'Start'} to ${nodes[target]?.label || 'Destination'}`);
+        }}
+        onSetTab={(tab) => {
+          setActiveTab(tab);
+        }}
+        onUpdateMobilityProfile={handleUpdateMobilityProfile}
+        onToggleAccessibleMode={() => setIsAccessibleMode(prev => !prev)}
+      />
 
       {/* QR Micro-Location Scanner Modal */}
       <QRScannerModal
