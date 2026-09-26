@@ -21,12 +21,13 @@ export function heuristic(nodeA, nodeB) {
  * Build adjacency list incorporating live hazard states
  * @param {Array} edges list of graph edges
  * @param {Object} hazardMap map of edgeId -> { isBlocked: boolean, type: string }
+ * @param {Object} nodes map of nodeId -> node
  */
-export function buildAdjacencyList(edges, hazardMap = {}) {
+export function buildAdjacencyList(edges = GRAPH_EDGES, hazardMap = {}, nodes = SPATIAL_NODES) {
   const adj = {};
 
   // Initialize nodes
-  Object.keys(SPATIAL_NODES).forEach((nodeId) => {
+  Object.keys(nodes).forEach((nodeId) => {
     adj[nodeId] = [];
   });
 
@@ -34,8 +35,8 @@ export function buildAdjacencyList(edges, hazardMap = {}) {
     const isHazardBlocked = hazardMap[edge.id]?.isBlocked;
     const effectiveWeight = isHazardBlocked ? (edge.distance + INFINITY_WEIGHT) : edge.distance;
 
-    const uNode = SPATIAL_NODES[edge.u];
-    const vNode = SPATIAL_NODES[edge.v];
+    const uNode = nodes[edge.u];
+    const vNode = nodes[edge.v];
 
     if (uNode && vNode) {
       adj[edge.u].push({
@@ -72,14 +73,16 @@ export function buildAdjacencyList(edges, hazardMap = {}) {
  * @param {string} startNodeId 
  * @param {string} targetNodeId 
  * @param {Object} hazardMap 
+ * @param {Object} customNodes
+ * @param {Array} customEdges
  * @returns {Object} result with path, distance, detoured, directions
  */
-export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}) {
+export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}, customNodes = SPATIAL_NODES, customEdges = GRAPH_EDGES) {
   if (!startNodeId || !targetNodeId) return null;
-  if (!SPATIAL_NODES[startNodeId] || !SPATIAL_NODES[targetNodeId]) return null;
+  if (!customNodes[startNodeId] || !customNodes[targetNodeId]) return null;
 
   if (startNodeId === targetNodeId) {
-    const node = SPATIAL_NODES[startNodeId];
+    const node = customNodes[startNodeId];
     return {
       success: true,
       path: [startNodeId],
@@ -91,8 +94,8 @@ export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}) {
     };
   }
 
-  const adj = buildAdjacencyList(GRAPH_EDGES, hazardMap);
-  const targetNode = SPATIAL_NODES[targetNodeId];
+  const adj = buildAdjacencyList(customEdges, hazardMap, customNodes);
+  const targetNode = customNodes[targetNodeId];
 
   // Open set priority queue (min-heap simulation using array for lightweight footprint)
   const openSet = new Set([startNodeId]);
@@ -101,13 +104,13 @@ export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}) {
   const gScore = {}; // Cost from start to node
   const fScore = {}; // Estimated total cost
 
-  Object.keys(SPATIAL_NODES).forEach((nodeId) => {
+  Object.keys(customNodes).forEach((nodeId) => {
     gScore[nodeId] = Infinity;
     fScore[nodeId] = Infinity;
   });
 
   gScore[startNodeId] = 0;
-  fScore[startNodeId] = heuristic(SPATIAL_NODES[startNodeId], targetNode);
+  fScore[startNodeId] = heuristic(customNodes[startNodeId], targetNode);
 
   while (openSet.size > 0) {
     // Pick node with lowest fScore
@@ -124,7 +127,7 @@ export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}) {
 
     // Reached destination
     if (current === targetNodeId) {
-      return reconstructPath(cameFrom, current, startNodeId, hazardMap);
+      return reconstructPath(cameFrom, current, startNodeId, hazardMap, customNodes);
     }
 
     openSet.delete(current);
@@ -143,7 +146,7 @@ export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}) {
           edgeInfo: neighbor
         };
         gScore[neighbor.to] = tentativeG;
-        fScore[neighbor.to] = tentativeG + heuristic(SPATIAL_NODES[neighbor.to], targetNode);
+        fScore[neighbor.to] = tentativeG + heuristic(customNodes[neighbor.to], targetNode);
         openSet.add(neighbor.to);
       }
     }
@@ -164,7 +167,7 @@ export function findShortestPath(startNodeId, targetNodeId, hazardMap = {}) {
 /**
  * Reconstruct path array and build human-friendly turn-by-turn directions
  */
-function reconstructPath(cameFrom, current, startId, hazardMap) {
+function reconstructPath(cameFrom, current, startId, hazardMap, customNodes = SPATIAL_NODES) {
   const path = [current];
   const edgeDetails = [];
   let curr = current;
@@ -178,7 +181,7 @@ function reconstructPath(cameFrom, current, startId, hazardMap) {
 
   let totalMeters = 0;
   const directions = [];
-  const nodes = path.map((id) => SPATIAL_NODES[id]);
+  const nodes = path.map((id) => customNodes[id]);
 
   const startNode = nodes[0];
   const endNode = nodes[nodes.length - 1];
@@ -242,18 +245,19 @@ function reconstructPath(cameFrom, current, startId, hazardMap) {
  * Emergency SOS Evacuation Egress Path
  * Computes safest and nearest exit / assembly point avoiding all hazards
  */
-export function findNearestEmergencyExit(currentNodeId, hazardMap = {}) {
+export function findNearestEmergencyExit(currentNodeId, hazardMap = {}, customNodes = SPATIAL_NODES, customEdges = GRAPH_EDGES) {
   const exitNodeCandidates = ["N_FIRE_EXIT_S", "N_FIRE_EXIT_N", "N_ASSEMBLY"];
   let bestRoute = null;
   let minCost = Infinity;
 
   exitNodeCandidates.forEach((exitId) => {
-    const result = findShortestPath(currentNodeId, exitId, hazardMap);
+    if (!customNodes[exitId]) return;
+    const result = findShortestPath(currentNodeId, exitId, hazardMap, customNodes, customEdges);
     if (result && result.success && result.totalDistance < minCost) {
       minCost = result.totalDistance;
       bestRoute = {
         ...result,
-        targetExit: SPATIAL_NODES[exitId]
+        targetExit: customNodes[exitId]
       };
     }
   });

@@ -30,7 +30,9 @@ export default function BuildingMap({
   activeRoute,
   hazardMap = {},
   isSosActive = false,
-  highlightedNodeId = null
+  highlightedNodeId = null,
+  nodes = SPATIAL_NODES,
+  edges = GRAPH_EDGES
 }) {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -39,12 +41,12 @@ export default function BuildingMap({
 
   // Filter nodes and rooms by current floor
   const currentFloorRooms = FLOOR_ROOMS[activeFloor] || [];
-  const currentFloorNodes = Object.values(SPATIAL_NODES).filter(n => n.floor === activeFloor);
+  const currentFloorNodes = Object.values(nodes).filter(n => n.floor === activeFloor);
 
   // Filter edges where either u or v is on current floor
-  const currentFloorEdges = GRAPH_EDGES.filter(e => {
-    const u = SPATIAL_NODES[e.u];
-    const v = SPATIAL_NODES[e.v];
+  const currentFloorEdges = edges.filter(e => {
+    const u = nodes[e.u];
+    const v = nodes[e.v];
     if (e.isVertical) {
       return (u && u.floor === activeFloor) || (v && v.floor === activeFloor);
     }
@@ -54,9 +56,9 @@ export default function BuildingMap({
   // Calculate route polyline points for current floor
   const routePoints = [];
   if (activeRoute && activeRoute.path && activeRoute.path.length > 1) {
-    const nodes = activeRoute.path.map(id => SPATIAL_NODES[id]);
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
+    const routeNodeList = activeRoute.path.map(id => nodes[id]);
+    for (let i = 0; i < routeNodeList.length; i++) {
+      const node = routeNodeList[i];
       if (node && node.floor === activeFloor) {
         routePoints.push(`${node.x},${node.y}`);
       }

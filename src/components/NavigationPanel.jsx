@@ -25,17 +25,18 @@ export default function NavigationPanel({
   activeRoute,
   onOpenScanner,
   onClearRoute,
-  onSwapEndpoints
+  onSwapEndpoints,
+  nodes = SPATIAL_NODES
 }) {
   const [showDirections, setShowDirections] = useState(true);
 
   // Group nodes by floor and category
-  const allNodes = Object.values(SPATIAL_NODES);
+  const allNodes = Object.values(nodes);
   const groundFloorNodes = allNodes.filter(n => n.floor === 0);
   const firstFloorNodes = allNodes.filter(n => n.floor === 1);
 
-  const startNode = SPATIAL_NODES[startNodeId];
-  const targetNode = SPATIAL_NODES[targetNodeId];
+  const startNode = nodes[startNodeId];
+  const targetNode = nodes[targetNodeId];
 
   // Quick preset shortcuts
   const presets = [

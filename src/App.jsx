@@ -8,9 +8,11 @@ import CabinRadar from './components/CabinRadar.jsx';
 import GrievanceDesk from './components/GrievanceDesk.jsx';
 import JanitorialControls from './components/JanitorialControls.jsx';
 import SosModal from './components/SosModal.jsx';
+import AdminStudio from './components/AdminStudio.jsx';
 
 import { 
   SPATIAL_NODES, 
+  GRAPH_EDGES,
   FACULTY_ROSTER, 
   INITIAL_APPOINTMENTS 
 } from './data/campusData.js';
@@ -34,10 +36,14 @@ import {
 
 export default function App() {
   // Navigation & Spatial States
-  const [activeTab, setActiveTab] = useState('wayfinding'); // 'wayfinding', 'erp', 'cabin', 'grievance', 'janitorial'
+  const [activeTab, setActiveTab] = useState('wayfinding'); // 'wayfinding', 'erp', 'cabin', 'grievance', 'janitorial', 'admin_studio'
   const [userRole, setUserRole] = useState('student'); // 'student', 'faculty', 'hod', 'janitorial', 'admin'
   const [activeFloor, setActiveFloor] = useState(0); // 0 = Ground Floor, 1 = First Floor
   
+  // Dynamic Spatial Nodes and Graph Edges (Extensible by Admin Studio)
+  const [nodes, setNodes] = useState(SPATIAL_NODES);
+  const [edges, setEdges] = useState(GRAPH_EDGES);
+
   const [startNodeId, setStartNodeId] = useState('N_ENTRANCE');
   const [targetNodeId, setTargetNodeId] = useState('N_HOD');
   
@@ -84,18 +90,18 @@ export default function App() {
   // Compute A* Pathfinding Route dynamically
   const activeRoute = useMemo(() => {
     if (!startNodeId || !targetNodeId) return null;
-    return findShortestPath(startNodeId, targetNodeId, hazardMap);
-  }, [startNodeId, targetNodeId, hazardMap]);
+    return findShortestPath(startNodeId, targetNodeId, hazardMap, nodes, edges);
+  }, [startNodeId, targetNodeId, hazardMap, nodes, edges]);
 
   // Compute Emergency Egress Route
   const egressRoute = useMemo(() => {
-    return findNearestEmergencyExit(startNodeId, hazardMap);
-  }, [startNodeId, hazardMap]);
+    return findNearestEmergencyExit(startNodeId, hazardMap, nodes, edges);
+  }, [startNodeId, hazardMap, nodes, edges]);
 
   // Handler for QR Scan confirmation
   const handleScanComplete = (nodeId) => {
     setStartNodeId(nodeId);
-    const node = SPATIAL_NODES[nodeId];
+    const node = nodes[nodeId];
     if (node) {
       setActiveFloor(node.floor);
       setNotification(`Cartesian Position locked to ${node.label} (${node.qr}) in <180ms!`);
@@ -104,7 +110,7 @@ export default function App() {
 
   // Handler for clicking a node directly on the SVG map
   const handleMapSelectNode = (nodeId) => {
-    const node = SPATIAL_NODES[nodeId];
+    const node = nodes[nodeId];
     if (!node) return;
 
     if (!startNodeId) {
@@ -113,6 +119,34 @@ export default function App() {
     } else {
       setTargetNodeId(nodeId);
       setNotification(`Destination set to ${node.label}`);
+    }
+  };
+
+  // Handlers for Admin Studio & AI Spatial Engine
+  const handleAddNewNode = (newNode) => {
+    setNodes(prev => ({
+      ...prev,
+      [newNode.id]: newNode
+    }));
+    setNotification(`✅ New Cartesian QR Anchor registered: ${newNode.label} (${newNode.qr})`);
+  };
+
+  const handleAddNewEdge = (newEdge) => {
+    setEdges(prev => [...prev, newEdge]);
+    setNotification(`✅ Map Corridor improvised: ${newEdge.corridor} (${newEdge.distance}m)`);
+  };
+
+  const handleApplyAiRoute = (aiRouteResult) => {
+    if (aiRouteResult && aiRouteResult.route && aiRouteResult.route.path) {
+      const path = aiRouteResult.route.path;
+      if (path.length >= 2) {
+        setStartNodeId(path[0]);
+        setTargetNodeId(path[path.length - 1]);
+        const firstNode = nodes[path[0]];
+        if (firstNode) setActiveFloor(firstNode.floor);
+        setActiveTab('wayfinding');
+        setNotification(`🤖 AI Generated Route applied to Live Map!`);
+      }
     }
   };
 
@@ -171,7 +205,7 @@ export default function App() {
 
   // Handler for Cabin Radar navigate-to
   const handleNavigateToNode = (nodeId) => {
-    const node = SPATIAL_NODES[nodeId];
+    const node = nodes[nodeId];
     if (node) {
       setTargetNodeId(nodeId);
       setActiveFloor(node.floor);
@@ -235,7 +269,7 @@ export default function App() {
     if (egressRoute && egressRoute.targetExit) {
       setTargetNodeId(egressRoute.targetExit.id);
       setIsSosActive(true);
-      setActiveFloor(SPATIAL_NODES[startNodeId]?.floor ?? 0);
+      setActiveFloor(nodes[startNodeId]?.floor ?? 0);
       setActiveTab('wayfinding');
       setNotification('🚨 Emergency evacuation route active! Follow safe exit trajectory.');
     }
@@ -263,6 +297,8 @@ export default function App() {
           setUserRole(newRole);
           if (newRole === 'janitorial') {
             setActiveTab('janitorial');
+          } else if (newRole === 'admin') {
+            setActiveTab('admin_studio');
           }
           setNotification(`Switched persona to: ${newRole.toUpperCase()}`);
         }}
@@ -360,6 +396,21 @@ export default function App() {
               </span>
             )}
           </button>
+
+          {/* TAB 6: Admin Studio & AI Spatial Engine (For Admin and HOD) */}
+          {(userRole === 'admin' || userRole === 'hod') && (
+            <button
+              onClick={() => setActiveTab('admin_studio')}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
+                activeTab === 'admin_studio'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-500/25 ring-1 ring-purple-400'
+                  : 'text-purple-300/90 hover:text-white hover:bg-purple-950/40 border border-purple-800/40'
+              }`}
+            >
+              <Sparkles className="h-4 w-4 text-purple-300" />
+              <span>Admin Studio & AI Engine</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -378,6 +429,8 @@ export default function App() {
                 activeRoute={activeRoute}
                 hazardMap={hazardMap}
                 isSosActive={isSosActive}
+                nodes={nodes}
+                edges={edges}
               />
             </div>
 
@@ -399,6 +452,7 @@ export default function App() {
                   setStartNodeId(targetNodeId);
                   setTargetNodeId(temp);
                 }}
+                nodes={nodes}
               />
             </div>
           </div>
@@ -440,6 +494,18 @@ export default function App() {
             cleaningReports={cleaningReports}
             onUploadCleaning={handleUploadCleaning}
             onCompleteCleaning={handleCompleteCleaning}
+          />
+        )}
+
+        {/* Tab 6: Admin Studio with AI Engine, QR Wall Placard Generator & Map Improviser */}
+        {activeTab === 'admin_studio' && (userRole === 'admin' || userRole === 'hod') && (
+          <AdminStudio
+            nodes={nodes}
+            edges={edges}
+            hazardMap={hazardMap}
+            onAddNewNode={handleAddNewNode}
+            onAddNewEdge={handleAddNewEdge}
+            onApplyAiRoute={handleApplyAiRoute}
           />
         )}
       </main>
