@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import Header from './components/Header.jsx';
-import BuildingMap from './components/BuildingMap.jsx';
-import NavigationPanel from './components/NavigationPanel.jsx';
+import NavRail from './components/NavRail.jsx';
+import LeftHudPanel from './components/LeftHudPanel.jsx';
+import IsometricBuildingMap from './components/IsometricBuildingMap.jsx';
+import RightHudPanel from './components/RightHudPanel.jsx';
+
 import QRScannerModal from './components/QRScannerModal.jsx';
 import ErpHub from './components/ErpHub.jsx';
 import CabinRadar from './components/CabinRadar.jsx';
@@ -26,22 +28,22 @@ import {
 } from './services/pathfinding.js';
 
 import { 
+  Compass, 
   Navigation, 
-  GraduationCap, 
-  Users, 
-  Wrench, 
-  Sparkles,
+  CheckCircle2, 
+  Accessibility, 
+  QrCode, 
+  ShieldAlert, 
+  Sparkles, 
   AlertTriangle,
-  Layers,
-  ShieldCheck,
-  CheckCircle2,
-  CalendarCheck,
-  Accessibility
+  ChevronRight,
+  User,
+  Activity
 } from 'lucide-react';
 
 export default function App() {
-  // Navigation & Spatial States
-  const [activeTab, setActiveTab] = useState('wayfinding'); // 'wayfinding', 'erp', 'cabin', 'grievance', 'janitorial', 'admin_studio'
+  // Navigation & Spatial Cockpit States
+  const [activeDrawer, setActiveDrawer] = useState('none'); // 'none' (pure 3D map telemetry), 'erp', 'cabin', 'grievance', 'janitorial', 'admin'
   const [userRole, setUserRole] = useState('student'); // 'student', 'faculty', 'hod', 'janitorial', 'admin'
   const [activeFloor, setActiveFloor] = useState(0); // 0 = Ground Floor, 1 = First Floor
   
@@ -81,6 +83,22 @@ export default function App() {
   // Shared Faculty & Appointments State
   const [facultyList, setFacultyList] = useState(FACULTY_ROSTER);
   const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
+
+  // Map Telemetry Layers Toggle State
+  const [mapLayers, setMapLayers] = useState({
+    accessibility: true,
+    cleaning: true,
+    wifi: true,
+    qr: true,
+    emergency: true
+  });
+
+  const handleToggleMapLayer = (layerKey) => {
+    setMapLayers(prev => ({
+      ...prev,
+      [layerKey]: !prev[layerKey]
+    }));
+  };
 
   // Modals & SOS States
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -171,8 +189,8 @@ export default function App() {
         setTargetNodeId(path[path.length - 1]);
         const firstNode = nodes[path[0]];
         if (firstNode) setActiveFloor(firstNode.floor);
-        setActiveTab('wayfinding');
-        setNotification(`🤖 AI Generated Route applied to Live Map!`);
+        setActiveDrawer('none');
+        setNotification(`🤖 AI Generated Route applied to 3D Live Map!`);
       }
     }
   };
@@ -236,7 +254,7 @@ export default function App() {
     if (node) {
       setTargetNodeId(nodeId);
       setActiveFloor(node.floor);
-      setActiveTab('wayfinding');
+      setActiveDrawer('none');
       setNotification(`Target set to ${node.label}. Generating turn-by-turn guidance.`);
     }
   };
@@ -275,8 +293,8 @@ export default function App() {
   const handleUpdateFacultyStatus = (facultyId, newStatus) => {
     setFacultyList(prev => prev.map(f => {
       if (f.id === facultyId) {
-        return {
-          ...f,
+        return { 
+          ...f, 
           status: newStatus,
           statusMessage: newStatus === 'Available' 
             ? 'Available in cabin for student consultation' 
@@ -297,19 +315,27 @@ export default function App() {
       setTargetNodeId(egressRoute.targetExit.id);
       setIsSosActive(true);
       setActiveFloor(nodes[startNodeId]?.floor ?? 0);
-      setActiveTab('wayfinding');
+      setActiveDrawer('none');
       setNotification('🚨 Emergency evacuation route active! Follow safe exit trajectory.');
     }
   };
 
+  // Role details
+  const roleLabels = {
+    student: { name: 'Gagan N Prasad', role: 'Student (CSE 4th Sem)', badge: '26UG1BYCS0588-T' },
+    faculty: { name: 'Prof. Rajesh K', role: 'Assistant Professor', badge: 'CSE-FAC-08' },
+    hod: { name: 'Dr. Harish Kumar N', role: 'Professor & HOD', badge: 'CSE-HOD-01' },
+    janitorial: { name: 'Ramesh M', role: 'Custodial & Safety Lead', badge: 'FAC-JAN-04' },
+    admin: { name: 'SuperAdmin', role: 'System Administrator', badge: 'SYS-ADM-01' }
+  };
+
   const activeHazardCount = Object.values(hazardMap).filter(h => h.isBlocked).length;
-  const pendingAppointmentsCount = appointments.filter(a => a.status === 'Pending').length;
 
   return (
-    <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+    <div className="h-screen w-screen overflow-hidden bg-[#070b13] text-slate-100 flex flex-col font-sans select-none antialiased">
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed top-16 right-4 z-50 max-w-md animate-bounce">
+        <div className="fixed top-14 right-6 z-50 max-w-md animate-bounce pointer-events-none">
           <div className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-2xl flex items-center gap-2 border border-blue-400">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
             <span>{notification}</span>
@@ -317,252 +343,252 @@ export default function App() {
         </div>
       )}
 
-      {/* Global Application Header */}
-      <Header
-        currentRole={userRole}
-        onRoleChange={(newRole) => {
-          setUserRole(newRole);
-          if (newRole === 'janitorial') {
-            setActiveTab('janitorial');
-          } else if (newRole === 'admin') {
-            setActiveTab('admin_studio');
-          }
-          setNotification(`Switched persona to: ${newRole.toUpperCase()}`);
-        }}
-        onOpenScanner={() => setIsScannerOpen(true)}
-        onTriggerSos={() => setIsSosOpen(true)}
-        activeHazardCount={activeHazardCount}
-        isAccessibleMode={isAccessibleMode}
-        onToggleAccessibleMode={() => setIsAccessibleMode(prev => !prev)}
-        onOpenAiCopilot={() => {
-          const aiBtn = document.querySelector('button[title="Open Gridlock Campus AI Assistant"]');
-          if (aiBtn) aiBtn.click();
-        }}
-      />
+      {/* Sleek Top Spatial Status Bar (Height: 48px) */}
+      <header className="h-12 w-full border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-40">
+        {/* Brand identity */}
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-500/25 ring-1 ring-white/20">
+            <Compass className="h-4 w-4 animate-spin-slow" />
+          </div>
 
-      {/* Role-Specific Module Navigation Bar */}
-      <div className="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 sm:px-6">
-        <div className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto py-2.5 no-scrollbar">
-          {/* TAB 1: Indoor Navigation */}
-          <button
-            onClick={() => setActiveTab('wayfinding')}
-            className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
-              activeTab === 'wayfinding'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <Navigation className="h-4 w-4" />
-            <span>Indoor Navigation & Map</span>
-          </button>
-
-          {/* TAB 2: Role-based ERP Tab Label */}
-          <button
-            onClick={() => setActiveTab('erp')}
-            className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
-              activeTab === 'erp'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <GraduationCap className="h-4 w-4" />
-            <span>
-              {userRole === 'student' && 'Academic & Financial ERP'}
-              {userRole === 'faculty' && 'Grading & Attendance Ledger'}
-              {userRole === 'hod' && 'Department ERP & Condonation'}
-              {userRole === 'janitorial' && 'Custodial Facilities Ledger'}
-              {userRole === 'admin' && 'Institutional ERP Administration'}
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-sm tracking-tight text-white">
+              GRIDLOCK
             </span>
-          </button>
+            <span className="rounded bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.5 text-[10px] font-mono font-bold text-cyan-400">
+              SPATIAL COCKPIT
+            </span>
+            <span className="hidden md:inline text-slate-500 text-xs">•</span>
+            <span className="hidden md:inline text-slate-400 text-xs font-medium">
+              BMSIT CSE Apex Complex
+            </span>
+          </div>
+        </div>
 
-          {/* TAB 3: Role-based Cabin / Appointments Tab Label (Hidden for Janitor) */}
-          {userRole !== 'janitorial' && (
-            <button
-              onClick={() => setActiveTab('cabin')}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
-                activeTab === 'cabin'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <Users className="h-4 w-4" />
-              <span>
-                {userRole === 'student' && 'Faculty Cabin Radar (Book Slot)'}
-                {(userRole === 'faculty' || userRole === 'hod') && 'Cabin Desk & Student Appointments'}
-                {userRole === 'admin' && 'All Cabin Bookings Log'}
+        {/* Center Live Telemetry Strip */}
+        <div className="hidden lg:flex items-center gap-3 bg-slate-900/80 border border-slate-800 rounded-full px-3 py-1 text-xs">
+          {activeRoute ? (
+            <div className="flex items-center gap-2 text-cyan-300">
+              <Navigation className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
+              <span className="font-medium text-[11px]">
+                Route: <strong className="text-white">{nodes[startNodeId]?.label || startNodeId}</strong> → <strong className="text-white">{nodes[targetNodeId]?.label || targetNodeId}</strong>
               </span>
-              {(userRole === 'faculty' || userRole === 'hod') && pendingAppointmentsCount > 0 && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
-                  {pendingAppointmentsCount}
+              <span className="text-slate-500 font-mono">|</span>
+              <span className="font-mono text-emerald-400 font-bold text-[11px]">
+                {activeRoute.totalDistance}m ({activeRoute.estimatedSeconds}s)
+              </span>
+              {isAccessibleMode && (
+                <span className="rounded bg-purple-500/20 text-purple-300 px-1.5 py-0.2 text-[10px] font-semibold border border-purple-500/40">
+                  ♿ Elevator 1 Only
                 </span>
               )}
-            </button>
-          )}
-
-          {/* TAB 4: Helpdesk */}
-          <button
-            onClick={() => setActiveTab('grievance')}
-            className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
-              activeTab === 'grievance'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <Wrench className="h-4 w-4" />
-            <span>Geo-Tagged Helpdesk</span>
-          </button>
-
-          {/* TAB 5: Janitorial Controls */}
-          <button
-            onClick={() => setActiveTab('janitorial')}
-            className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
-              activeTab === 'janitorial'
-                ? 'bg-amber-600 text-white shadow-md shadow-amber-500/20'
-                : 'text-amber-400/80 hover:text-amber-300 hover:bg-amber-500/10'
-            }`}
-          >
-            <AlertTriangle className="h-4 w-4" />
-            <span>Janitor Cleaning & Route Avoidance</span>
-            {activeHazardCount > 0 && (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                {activeHazardCount}
-              </span>
-            )}
-          </button>
-
-          {/* TAB 6: Admin Studio & AI Spatial Engine (For Admin and HOD) */}
-          {(userRole === 'admin' || userRole === 'hod') && (
-            <button
-              onClick={() => setActiveTab('admin_studio')}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
-                activeTab === 'admin_studio'
-                  ? 'bg-purple-600 text-white shadow-md shadow-purple-500/25 ring-1 ring-purple-400'
-                  : 'text-purple-300/90 hover:text-white hover:bg-purple-950/40 border border-purple-800/40'
-              }`}
-            >
-              <Sparkles className="h-4 w-4 text-purple-300" />
-              <span>Admin Studio & AI Engine</span>
-            </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-slate-400 text-[11px]">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>A* Dijkstra &lt;180ms Engine Ready</span>
+              <span className="text-slate-600">•</span>
+              <span>Cartesian Mesh 24 Nodes Online</span>
+              {activeHazardCount > 0 && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-amber-400 font-semibold flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {activeHazardCount} Wet Floor Detours
+                  </span>
+                </>
+              )}
+            </div>
           )}
         </div>
-      </div>
 
-      {/* Main Content Workspace */}
-      <main className="flex-1 mx-auto w-full max-w-7xl p-4 sm:p-6">
-        {activeTab === 'wayfinding' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* Interactive Vector Building Map Viewport */}
-            <div className="lg:col-span-8 flex flex-col">
-              <BuildingMap
-                activeFloor={activeFloor}
-                onFloorChange={setActiveFloor}
-                startNodeId={startNodeId}
-                targetNodeId={targetNodeId}
-                onSelectNode={handleMapSelectNode}
-                activeRoute={activeRoute}
-                hazardMap={hazardMap}
-                isSosActive={isSosActive}
-                nodes={nodes}
-                edges={edges}
-              />
+        {/* Right Tools & Active Persona Pill */}
+        <div className="flex items-center gap-2">
+          {/* Accessible No-Stairs Mode Toggle */}
+          <button
+            onClick={() => setIsAccessibleMode(prev => !prev)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+              isAccessibleMode
+                ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30 border border-purple-400/50'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+            title="Toggle ♿ Stair-Free Accessibility Mode"
+          >
+            <Accessibility className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline text-[11px]">♿ No-Stairs</span>
+          </button>
+
+          {/* Quick Scan QR Anchor */}
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-600/20 text-blue-300 hover:bg-blue-600 hover:text-white border border-blue-500/30 text-xs font-semibold transition"
+            title="Scan Physical QR Anchor"
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline text-[11px]">Scan QR</span>
+          </button>
+
+          {/* Quick Emergency SOS */}
+          <button
+            onClick={() => setIsSosOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600/20 text-red-300 hover:bg-red-600 hover:text-white border border-red-500/30 text-xs font-semibold transition"
+            title="Emergency Evacuation Egress"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+            <span className="hidden sm:inline text-[11px]">SOS</span>
+          </button>
+
+          {/* Role Pill Switcher */}
+          <button
+            onClick={() => {
+              const roles = ['student', 'faculty', 'hod', 'janitorial', 'admin'];
+              const nextRole = roles[(roles.indexOf(userRole) + 1) % roles.length];
+              setUserRole(nextRole);
+              setNotification(`Switched persona to: ${nextRole.toUpperCase()}`);
+            }}
+            className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 transition text-xs"
+            title="Click to cycle role persona"
+          >
+            <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-[10px] font-black text-white">
+              {userRole[0].toUpperCase()}
             </div>
-
-            {/* Micro-Location Wayfinding Navigation Controls */}
-            <div className="lg:col-span-4 flex flex-col gap-4">
-              <NavigationPanel
-                startNodeId={startNodeId}
-                targetNodeId={targetNodeId}
-                onSelectStart={setStartNodeId}
-                onSelectTarget={setTargetNodeId}
-                activeRoute={activeRoute}
-                onOpenScanner={() => setIsScannerOpen(true)}
-                onClearRoute={() => {
-                  setTargetNodeId(null);
-                  setIsSosActive(false);
-                }}
-                onSwapEndpoints={() => {
-                  const temp = startNodeId;
-                  setStartNodeId(targetNodeId);
-                  setTargetNodeId(temp);
-                }}
-                nodes={nodes}
-                isAccessibleMode={isAccessibleMode}
-                onToggleAccessibleMode={() => setIsAccessibleMode(prev => !prev)}
-                mobilityProfile={mobilityProfile}
-              />
+            <div className="text-left hidden sm:block">
+              <div className="text-[10px] font-bold text-white leading-tight capitalize">
+                {roleLabels[userRole]?.name || userRole}
+              </div>
+              <div className="text-[9px] text-slate-400 leading-tight">
+                {userRole.toUpperCase()}
+              </div>
             </div>
-          </div>
-        )}
+          </button>
+        </div>
+      </header>
 
-        {/* Tab 2: Role-based ERP Hub */}
-        {activeTab === 'erp' && (
-          <ErpHub 
-            userRole={userRole}
-            mobilityProfile={mobilityProfile}
-            onUpdateMobilityProfile={handleUpdateMobilityProfile}
-            isAccessibleMode={isAccessibleMode}
-            onToggleAccessibleMode={() => setIsAccessibleMode(prev => !prev)}
-          />
-        )}
+      {/* Main Spatial Stage Cockpit Layout */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* 1. Left Nav Rail (64px) */}
+        <NavRail
+          currentRole={userRole}
+          onRoleChange={(newRole) => {
+            setUserRole(newRole);
+            setNotification(`Switched persona to: ${newRole.toUpperCase()}`);
+          }}
+          activeDrawer={activeDrawer}
+          onSelectDrawer={(drawerId) => {
+            setActiveDrawer(prev => prev === drawerId ? 'none' : drawerId);
+          }}
+          onOpenScanner={() => setIsScannerOpen(true)}
+          onTriggerSos={() => setIsSosOpen(true)}
+          isAccessibleMode={isAccessibleMode}
+          onToggleAccessibleMode={() => setIsAccessibleMode(prev => !prev)}
+          onOpenAiCopilot={() => {
+            const aiBtn = document.querySelector('button[title="Open Gridlock Campus AI Assistant"]');
+            if (aiBtn) aiBtn.click();
+          }}
+        />
 
-        {/* Tab 3: Dynamic Cabin Occupancy Radar & Student Appointments Desk (Hidden for Janitor) */}
-        {activeTab === 'cabin' && userRole !== 'janitorial' && (
-          <CabinRadar
-            userRole={userRole}
-            appointments={appointments}
-            onAcceptAppointment={handleAcceptAppointment}
-            onRejectAppointment={handleRejectAppointment}
-            onBookAppointment={handleBookAppointment}
-            facultyList={facultyList}
-            onUpdateFacultyStatus={handleUpdateFacultyStatus}
-            onNavigateToNode={handleNavigateToNode}
-          />
-        )}
+        {/* 2. Left Floating HUD Panel (340px) */}
+        <LeftHudPanel
+          currentRole={userRole}
+          activeFloor={activeFloor}
+          onFloorChange={setActiveFloor}
+          startNodeId={startNodeId}
+          targetNodeId={targetNodeId}
+          onSelectStart={setStartNodeId}
+          onSelectTarget={setTargetNodeId}
+          activeRoute={activeRoute}
+          isAccessibleMode={isAccessibleMode}
+          onToggleAccessibleMode={() => setIsAccessibleMode(prev => !prev)}
+          mapLayers={mapLayers}
+          onToggleMapLayer={handleToggleMapLayer}
+          nodes={nodes}
+          onOpenScanner={() => setIsScannerOpen(true)}
+        />
 
-        {/* Tab 4: Location-Aware Grievance Desk */}
-        {activeTab === 'grievance' && (
-          <GrievanceDesk
-            currentScannedNodeId={startNodeId}
-            userRole={userRole}
-          />
-        )}
-
-        {/* Tab 5: Janitorial Cleaning & Route Avoidance Portal */}
-        {activeTab === 'janitorial' && (
-          <JanitorialControls
+        {/* 3. Center Interactive 3D Digital Twin Map Viewport */}
+        <div className="flex-1 h-full relative overflow-hidden flex flex-col">
+          <IsometricBuildingMap
+            activeFloor={activeFloor}
+            onFloorChange={setActiveFloor}
+            startNodeId={startNodeId}
+            targetNodeId={targetNodeId}
+            onSelectNode={handleMapSelectNode}
+            activeRoute={activeRoute}
             hazardMap={hazardMap}
-            onToggleHazard={handleToggleHazard}
-            onClearAllHazards={handleClearAllHazards}
-            cleaningReports={cleaningReports}
-            onUploadCleaning={handleUploadCleaning}
-            onCompleteCleaning={handleCompleteCleaning}
-          />
-        )}
-
-        {/* Tab 6: Admin Studio with AI Engine, QR Wall Placard Generator & Map Improviser */}
-        {activeTab === 'admin_studio' && (userRole === 'admin' || userRole === 'hod') && (
-          <AdminStudio
+            isSosActive={isSosActive}
+            isAccessibleMode={isAccessibleMode}
             nodes={nodes}
             edges={edges}
-            hazardMap={hazardMap}
-            onAddNewNode={handleAddNewNode}
-            onAddNewEdge={handleAddNewEdge}
-            onApplyAiRoute={handleApplyAiRoute}
+            mapLayers={mapLayers}
           />
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950/80 px-4 py-4 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div>
-            <strong>GRIDLOCK SUPER-APP</strong> • Department of Computer Science & Engineering, BMSIT&M
-          </div>
-          <div>
-            Team Apex Achievers: Gagan N Prasad • Manav Redhu • Chimbili Manju Ganesh • Machal Ritesh Govardhan
-          </div>
         </div>
-      </footer>
+
+        {/* 4. Right Telemetry HUD / Slide-over Module Drawer */}
+        <RightHudPanel
+          currentRole={userRole}
+          activeDrawer={activeDrawer}
+          onSelectDrawer={setActiveDrawer}
+          facultyList={facultyList}
+          appointments={appointments}
+          hazardMap={hazardMap}
+          cleaningReports={cleaningReports}
+          nodes={nodes}
+          onNavigateToNode={handleNavigateToNode}
+        >
+          {/* Module Drawer Content */}
+          {activeDrawer === 'erp' && (
+            <ErpHub 
+              userRole={userRole}
+              mobilityProfile={mobilityProfile}
+              onUpdateMobilityProfile={handleUpdateMobilityProfile}
+              isAccessibleMode={isAccessibleMode}
+              onToggleAccessibleMode={() => setIsAccessibleMode(prev => !prev)}
+            />
+          )}
+
+          {activeDrawer === 'cabin' && userRole !== 'janitorial' && (
+            <CabinRadar
+              userRole={userRole}
+              appointments={appointments}
+              onAcceptAppointment={handleAcceptAppointment}
+              onRejectAppointment={handleRejectAppointment}
+              onBookAppointment={handleBookAppointment}
+              facultyList={facultyList}
+              onUpdateFacultyStatus={handleUpdateFacultyStatus}
+              onNavigateToNode={handleNavigateToNode}
+            />
+          )}
+
+          {activeDrawer === 'grievance' && (
+            <GrievanceDesk
+              currentScannedNodeId={startNodeId}
+              userRole={userRole}
+            />
+          )}
+
+          {activeDrawer === 'janitorial' && (
+            <JanitorialControls
+              hazardMap={hazardMap}
+              onToggleHazard={handleToggleHazard}
+              onClearAllHazards={handleClearAllHazards}
+              cleaningReports={cleaningReports}
+              onUploadCleaning={handleUploadCleaning}
+              onCompleteCleaning={handleCompleteCleaning}
+            />
+          )}
+
+          {activeDrawer === 'admin' && (userRole === 'admin' || userRole === 'hod') && (
+            <AdminStudio
+              nodes={nodes}
+              edges={edges}
+              hazardMap={hazardMap}
+              onAddNewNode={handleAddNewNode}
+              onAddNewEdge={handleAddNewEdge}
+              onApplyAiRoute={handleApplyAiRoute}
+            />
+          )}
+        </RightHudPanel>
+      </div>
 
       {/* Universal Campus AI Copilot Assistant */}
       <CampusAiCopilot
@@ -582,11 +608,13 @@ export default function App() {
           if (accessible !== undefined) setIsAccessibleMode(accessible);
           const targetNode = nodes[target];
           if (targetNode) setActiveFloor(targetNode.floor);
-          setActiveTab('wayfinding');
+          setActiveDrawer('none');
           setNotification(`📍 Route loaded: ${nodes[start]?.label || 'Start'} to ${nodes[target]?.label || 'Destination'}`);
         }}
         onSetTab={(tab) => {
-          setActiveTab(tab);
+          if (tab === 'wayfinding') setActiveDrawer('none');
+          else if (tab === 'admin_studio') setActiveDrawer('admin');
+          else setActiveDrawer(tab);
         }}
         onUpdateMobilityProfile={handleUpdateMobilityProfile}
         onToggleAccessibleMode={() => setIsAccessibleMode(prev => !prev)}
