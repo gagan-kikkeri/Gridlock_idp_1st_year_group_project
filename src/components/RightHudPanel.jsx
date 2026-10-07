@@ -45,7 +45,11 @@ export default function RightHudPanel({
   const availableFaculty = facultyList.filter(f => f.status === 'Available');
 
   // Student Attendance Calculation
-  const attendanceRate = STUDENT_ERP.academics.overallAttendance || 84.6;
+  const attendanceRate = React.useMemo(() => {
+    if (!STUDENT_ERP?.attendance?.length) return 84.6;
+    const avg = STUDENT_ERP.attendance.reduce((sum, item) => sum + item.percentage, 0) / STUDENT_ERP.attendance.length;
+    return parseFloat(avg.toFixed(1));
+  }, []);
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (attendanceRate / 100) * circumference;
@@ -287,7 +291,7 @@ export default function RightHudPanel({
                           {fac.name}
                         </div>
                         <div className="text-[9px] text-slate-400">
-                          {fac.designation} • {fac.cabin}
+                          {fac.designation} • {fac.cabinName || fac.cabin}
                         </div>
                       </div>
                     </div>
@@ -296,7 +300,7 @@ export default function RightHudPanel({
                       <button
                         onClick={() => onNavigateToNode(fac.cabinNodeId)}
                         className="px-2 py-1 bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white rounded text-[10px] font-bold transition flex items-center gap-0.5"
-                        title={`Navigate to ${fac.cabin}`}
+                        title={`Navigate to ${fac.cabinName || fac.cabin}`}
                       >
                         <Navigation className="w-2.5 h-2.5" />
                         <span>Go</span>
